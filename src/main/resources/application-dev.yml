@@ -1,0 +1,51 @@
+spring:
+  web:
+    resources:
+      add-mappings: false
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://mysql:3306/withpeace?useSSL=false&serverTimezone=Asia/Seoul&useLegacyDatetimeCode=false&allowPublicKeyRetrieval=true
+    username: root
+    password: 1234
+    hikari:
+      pool-name: jpa-hikari-pool
+      maximum-pool-size: 5
+      jdbc-url: ${spring.datasource.url}
+      username: ${spring.datasource.username}
+      password: ${spring.datasource.password}
+      driver-class-name: ${spring.datasource.driver-class-name}
+      idle-timeout: 300
+      max-lifetime: 300
+      data-source-properties:
+        rewriteBatchedStatements: true
+  jpa:
+    open-in-view: false
+    database: mysql
+    generate-ddl: true
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        hbm2ddl.import_files_sql_extractor: org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor
+        current_session_context_class: org.springframework.orm.hibernate5.SpringSessionContext
+        default_batch_fetch_size: ${chunkSize:100}
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        format_sql: true
+  # Security OAuth2 설정
+
+cloud:
+    aws:
+      credentials:
+        access-key:
+        secret-key:
+      s3:
+        bucket:
+      region.static: ap-northeast-2
+      stack:
+        auto: false
+
+jwt.secret: uefrfjr8ew9jfejwr9ejf8w3h4j98fj8e94fhorg9hn3owth48hqf384ohtgfu34oqh8w9th438r2j3490rfj2
