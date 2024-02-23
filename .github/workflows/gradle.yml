@@ -38,6 +38,7 @@ jobs:
           ./gradlew build -x test
   CD:
     runs-on: ubuntu-latest
+    needs: CI
     steps:
       # Docker build & push to prod
       - name: Docker build & push to prod
