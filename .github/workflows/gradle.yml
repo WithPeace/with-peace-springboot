@@ -36,21 +36,12 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew build -x test
-  CD:
-    runs-on: ubuntu-latest
-    needs: CI
-    steps:
+
       # Docker build & push to prod
       - name: Docker build & push to prod
         if: contains(github.ref, 'dev')
         run: |
           docker login -u chanjin -p as199231!
-          pwd
-          ls
-          cd ..
-          ls
-          cd ..
-          ls
           docker build -t chanjin/withpeace .
           docker push chanjin/withpeace
 
