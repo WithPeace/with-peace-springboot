@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  CI-CD:
+  CI:
     environment : production
     runs-on: ubuntu-latest
     steps:
