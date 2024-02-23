@@ -36,28 +36,31 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew build -x test
-          
-          # docker build & push to production
-          - name: Docker build & push to prod
-            if: contains(github.ref, 'dev')
-            run: |
-              docker login -u chanjin -p as199231!
-              docker build -f Dockerfile -t chanjin/withpeace .
-              docker push chanjin/withpeace
-          
-          ## deploy to production
-          - name: Deploy to prod
-            uses: appleboy/ssh-action@master
-            id: deploy-prod
-            if: contains(github.ref, 'dev')
-            with:
-              host: 49.50.160.170
-              username: ubuntu
-              key: ${{ secrets.PRIVATE_KEY }}
-              envs: GITHUB_SHA
-              script: |
-                sudo docker ps
-                sudo docker rm -f springboot
-                sudo docker pull chanjin/withpeace
-                sudo docker run -d -p 8080:8080 --name springboot --network=net chanjin/withpeace
-                sudo docker image prune -f
+  CD:
+    runs-on: ubuntu-latest
+    steps:
+      # Docker build & push to prod
+      - name: Docker build & push to prod
+        if: contains(github.ref, 'dev')
+        run: |
+          docker login -u chanjin -p as199231!
+          docker build -f Dockerfile -t chanjin/withpeace .
+          docker push chanjin/withpeace
+
+      # Deploy to prod
+      - name: Deploy to prod
+        uses: appleboy/ssh-action@master
+        id: deploy-prod
+        if: contains(github.ref, 'dev')
+        with:
+          host: 49.50.160.170
+          username: ubuntu
+          key: ${{ secrets.PRIVATE_KEY }}
+          envs: GITHUB_SHA
+          script: |
+            sudo docker ps
+            sudo docker rm -f springboot
+            sudo docker pull chanjin/withpeace
+            sudo docker run -d -p 8080:8080 --name springboot --network=net chanjin/withpeace
+            sudo docker image prune -f
+
