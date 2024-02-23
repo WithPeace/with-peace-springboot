@@ -5,13 +5,13 @@ name: CI/CD using github actions & docker
 on:
   pull_request :
     branches : ["master","dev"]
-
+    types : [closed]
 permissions:
   contents: read
 
 jobs:
   CI:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       # JDK setting - github actions에서 사용할 JDK 설정 (프로젝트나 AWS의 java 버전과 달라도 무방)
