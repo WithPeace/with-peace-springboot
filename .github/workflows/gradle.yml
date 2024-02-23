@@ -4,7 +4,7 @@ name: CI/CD using github actions & docker
 # event trigger
 on:
   pull_request :
-    branches : ["main","dev""]
+    branches : ["master","dev"]
 
 permissions:
   contents: read
