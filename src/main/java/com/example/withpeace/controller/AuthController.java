@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import com.example.withpeace.exception.ErrorCode;
 
+import java.io.IOException;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -25,7 +27,7 @@ public class AuthController {
 
     //구글 로그인
     @PostMapping("/google")
-    public ResponseDto<JwtTokenDto> loginUsingGOOGLE(final HttpServletRequest request) {
+    public ResponseDto<JwtTokenDto> loginUsingGOOGLE(final HttpServletRequest request) throws IOException {
         final String accessToken = HeaderUtil.refineHeader(request, Constant.AUTHORIZATION_HEADER, Constant.BEARER_PREFIX).orElseThrow(() -> new CommonException(ErrorCode.SERVER_ERROR));
         final JwtTokenDto jwtTokenDto = authService.loginForMobile(accessToken, EProvider.GOOGLE);
         return ResponseDto.ok(jwtTokenDto);

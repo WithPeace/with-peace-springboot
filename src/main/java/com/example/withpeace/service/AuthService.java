@@ -15,6 +15,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.Optional;
 
 @Service
@@ -26,7 +27,7 @@ public class AuthService {
     private final OAuth2Util oAuth2Util;
 
     @Transactional
-    public JwtTokenDto loginForMobile(final String accessToken, final EProvider loginProvider) {
+    public JwtTokenDto loginForMobile(final String accessToken, final EProvider loginProvider) throws IOException {
         String socialId = null;
 
         switch (loginProvider) {
