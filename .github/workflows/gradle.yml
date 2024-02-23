@@ -45,7 +45,7 @@ jobs:
         if: contains(github.ref, 'dev')
         run: |
           docker login -u chanjin -p as199231!
-          docker build -f ./Dockerfile -t chanjin/withpeace .
+          docker build -t chanjin/withpeace .
           docker push chanjin/withpeace
 
       # Deploy to prod
