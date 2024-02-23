@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  CI:
+  CI/CD:
     runs-on: ubuntu-latest
     steps:
       # JDK setting - github actions에서 사용할 JDK 설정 (프로젝트나 AWS의 java 버전과 달라도 무방)

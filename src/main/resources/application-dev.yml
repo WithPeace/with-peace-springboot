@@ -38,14 +38,15 @@ spring:
   # Security OAuth2 설정
 
 cloud:
-    aws:
-      credentials:
-        access-key:
-        secret-key:
-      s3:
-        bucket:
-      region.static: ap-northeast-2
-      stack:
-        auto: false
+  aws:
+    credentials:
+      accessKey:
+      secretKey:
+    s3:
+      bucket:
+    region:
+      static: ap-northeast-2
+    stack:
+      auto: false
 
 jwt.secret: uefrfjr8ew9jfejwr9ejf8w3h4j98fj8e94fhorg9hn3owth48hqf384ohtgfu34oqh8w9th438r2j3490rfj2
