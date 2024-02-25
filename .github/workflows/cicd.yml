@@ -51,7 +51,7 @@ jobs:
         id: deploy-prod
         if: contains(github.ref, 'dev')
         with:
-          host: 106.10.36.223
+          host: 106.10.43.125
           username: root
           password: withpeace!!
           port: 2222
