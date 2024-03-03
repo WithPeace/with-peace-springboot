@@ -86,4 +86,18 @@ class AuthServiceTest {
         }, "유효하지 않은 제공자입니다.");
     }
 
+    @Test
+    @DisplayName("사용자 로그인 실패: 사용자를 찾을 수 없을 때 예외 발생")
+    void loginForMobileFailNotFoundUser() throws IOException {
+        // Given
+        String accessToken = "valid_accessToken";
+        EProvider loginProvider = EProvider.GOOGLE;
+        String socialId = null;
+
+        // When & Then
+        assertThrows(CommonException.class, () -> {
+            authService.loginForMobile(accessToken, loginProvider);
+        }, "해당 사용자가 존재하지 않습니다.");
+    }
+
 }
