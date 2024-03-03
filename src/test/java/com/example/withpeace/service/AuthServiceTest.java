@@ -73,4 +73,17 @@ class AuthServiceTest {
         verify(jwtUtil, times(1)).generateTokens(user.getId(), user.getRole());
     }
 
+    @Test
+    @DisplayName("사용자 로그인 실패: 유효하지 않은 사용자 로그인 시 예외 발생")
+    void loginForMobileFailInvalidProvider() throws IOException {
+        // Given
+        String accessToken = "valid_accessToken";
+        EProvider invalidProvider = EProvider.APPLE; // 일단 구글로그인 테스트용으로 APPLE로 지정
+
+        // When & Then
+        assertThrows(CommonException.class, () -> {
+            authService.loginForMobile(accessToken, invalidProvider);
+        }, "유효하지 않은 제공자입니다.");
+    }
+
 }
