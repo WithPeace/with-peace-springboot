@@ -6,9 +6,8 @@ import com.example.withpeace.dto.ResponseDto;
 import com.example.withpeace.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,6 +20,16 @@ public class UserController {
     @DeleteMapping("")
     public ResponseDto<?> withdrawalUser(@UserId Long userId) {
         return ResponseDto.ok(userService.withdrawalUser(userId));
+    }
+
+    @PutMapping("profile/image")
+    public ResponseDto<?> updateProfileImage(@UserId Long userId, @RequestParam("file") MultipartFile file) {
+        return ResponseDto.ok(userService.updateProfileImage(userId, file));
+    }
+
+    @DeleteMapping("profile/image")
+    public ResponseDto<?> deleteProfileImage(@UserId Long userId) {
+        return ResponseDto.ok(userService.deleteProfileImage(userId));
     }
 
 

@@ -58,15 +58,16 @@ client:
       user-info-uri: "https://www.googleapis.com/userinfo/v2/me"
 
 cloud:
-    aws:
-      credentials:
-        accessKey:
-        secretKey:
-      s3:
-        bucket:
-      region:
-        static: ap-northeast-2
-      stack:
-        auto: false
+  aws:
+    credentials:
+      accessKey: 5xr2304ISFsqYXzVJGFl
+      secretKey: o9aJsLeo3UUNUeQWE7JmU3izM8I6rqzwOqQZCuK3
+    s3:
+      bucket: withpeace
+      endpoint: http://kr.object.ncloudstorage.com
+    region:
+      static: ap-northeast-2
+    stack:
+      auto: false
 
 jwt.secret: uefrfjr8ew9jfejwr9ejf8w3h4j98fj8e94fhorg9hn3owth48hqf384ohtgfu34oqh8w9th438r2j3490rfj2
