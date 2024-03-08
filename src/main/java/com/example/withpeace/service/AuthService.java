@@ -4,6 +4,7 @@ import com.example.withpeace.constant.Constant;
 import com.example.withpeace.domain.User;
 import com.example.withpeace.dto.JwtTokenDto;
 import com.example.withpeace.dto.request.SocialRegisterDto;
+import com.example.withpeace.dto.response.LoginResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.UserRepository;
@@ -27,7 +28,7 @@ public class AuthService {
     private final OAuth2Util oAuth2Util;
 
     @Transactional
-    public JwtTokenDto loginForMobile(final String accessToken, final EProvider loginProvider) throws IOException {
+    public LoginResponseDto loginForMobile(final String accessToken, final EProvider loginProvider) throws IOException {
         String socialId = null;
 
         switch (loginProvider) {
@@ -63,7 +64,9 @@ public class AuthService {
         user.setRefreshToken(jwtTokenDto.getRefreshToken());
         user.setLogin(true);
 
-        return jwtTokenDto;
+        LoginResponseDto loginResponseDto = new LoginResponseDto(jwtTokenDto, user.getRole());
+
+        return loginResponseDto;
     }
 
     @Transactional
