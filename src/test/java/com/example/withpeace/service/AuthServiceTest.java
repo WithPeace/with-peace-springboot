@@ -2,7 +2,7 @@ package com.example.withpeace.service;
 
 import com.example.withpeace.domain.User;
 import com.example.withpeace.dto.JwtTokenDto;
-import com.example.withpeace.dto.request.SocialRegisterDto;
+import com.example.withpeace.dto.response.LoginResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.repository.UserRepository;
 import com.example.withpeace.type.EProvider;
@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,11 +62,11 @@ class AuthServiceTest {
         given(jwtUtil.generateTokens(user.getId(), user.getRole())).willReturn(jwtTokenDto);
 
         // When
-        JwtTokenDto result = authService.loginForMobile(accessToken, loginProvider);
+        LoginResponseDto result = authService.loginForMobile(accessToken, loginProvider);
 
         // Then
         assertNotNull(result); // 반환된 결과가 null이 아닌지 확인
-        assertEquals(jwtTokenDto, result); // 반환된 JWT 토큰이 예상한 JWT 토큰과 일치하는지 검증
+        assertEquals(jwtTokenDto, result.jwtTokenDto()); // 반환된 JWT 토큰이 예상한 JWT 토큰과 일치하는지 검증
         verify(oAuth2Util, times(1)).getGoogleUserInformation(accessToken);
         verify(userRepository, times(1)).findBySocialIdAndEProvider(socialId, loginProvider);
         verify(jwtUtil, times(1)).generateTokens(user.getId(), user.getRole());
