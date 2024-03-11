@@ -3,7 +3,9 @@ package com.example.withpeace.controller;
 
 import com.example.withpeace.annotation.UserId;
 import com.example.withpeace.dto.ResponseDto;
+import com.example.withpeace.dto.request.NicknameRequestDto;
 import com.example.withpeace.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -16,13 +18,29 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserController {
     private final UserService userService;
 
+    @GetMapping("profile")
+    public ResponseDto<?> getUserProfile(@UserId Long userId) {
+        return ResponseDto.ok(userService.getUserProfile(userId));
+    }
+
     //회원탈퇴
     @DeleteMapping("")
     public ResponseDto<?> withdrawalUser(@UserId Long userId) {
         return ResponseDto.ok(userService.withdrawalUser(userId));
     }
 
-    @PutMapping("profile/image")
+    @PutMapping("profile")
+    public ResponseDto<?> updateProfile(@UserId Long userId, @Valid @RequestPart NicknameRequestDto nickname,
+                                        @RequestPart MultipartFile file) {
+        return ResponseDto.ok(userService.updateProfile(userId,nickname.nickname(),file));
+    }
+
+    @PatchMapping("profile/nickname")
+    public ResponseDto<?> updateNickname(@UserId Long userId, @Valid @RequestBody NicknameRequestDto nickname) {
+        return ResponseDto.ok(userService.updateNickname(userId, nickname.nickname()));
+    }
+
+    @PatchMapping("profile/image")
     public ResponseDto<?> updateProfileImage(@UserId Long userId, @RequestParam("file") MultipartFile file) {
         return ResponseDto.ok(userService.updateProfileImage(userId, file));
     }

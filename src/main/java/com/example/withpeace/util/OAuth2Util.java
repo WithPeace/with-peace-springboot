@@ -17,17 +17,20 @@ import static org.springframework.security.oauth2.core.OAuth2TokenIntrospectionC
 ;
 
 @Component
-@RequiredArgsConstructor
 public class OAuth2Util {
 
     private static final JacksonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private static final HttpTransport HTTP_TRANSPORT = new com.google.api.client.http.javanet.NetHttpTransport();
 
-    public String getGoogleUserInformation(final String accessToken) throws CommonException, IOException {
-        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(HTTP_TRANSPORT, JSON_FACTORY)
+    private GoogleIdTokenVerifier verifier;
+
+    public OAuth2Util() {
+        verifier = new GoogleIdTokenVerifier.Builder(HTTP_TRANSPORT, JSON_FACTORY)
                 .setAudience(Collections.singletonList(CLIENT_ID))
                 .build();
+    }
 
+    public String getGoogleUserIdToken(final String accessToken) throws CommonException, IOException {
         GoogleIdToken idToken = GoogleIdToken.parse(verifier.getJsonFactory(), accessToken);
 
         if (idToken != null) {
@@ -37,6 +40,16 @@ public class OAuth2Util {
             throw new CommonException(ErrorCode.AUTH_SERVER_USER_INFO_ERROR);
         }
 
+    }
 
+    public String getGoogleUserEmail(final String accessToken) throws CommonException, IOException {
+        GoogleIdToken idToken = GoogleIdToken.parse(verifier.getJsonFactory(), accessToken);
+
+        if (idToken != null) {
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            return payload.getEmail();
+        } else {
+            throw new CommonException(ErrorCode.AUTH_SERVER_USER_INFO_ERROR);
+        }
     }
 }

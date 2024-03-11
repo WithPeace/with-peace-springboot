@@ -64,7 +64,7 @@ cloud:
       secretKey: o9aJsLeo3UUNUeQWE7JmU3izM8I6rqzwOqQZCuK3
     s3:
       bucket: withpeace
-      endpoint: http://kr.object.ncloudstorage.com
+      endpoint: https://kr.object.ncloudstorage.com
     region:
       static: ap-northeast-2
     stack:

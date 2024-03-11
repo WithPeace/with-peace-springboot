@@ -48,7 +48,7 @@ class AuthServiceTest {
         EProvider loginProvider = EProvider.GOOGLE;
         String socialId = "valid_socialId";
 
-        given(oAuth2Util.getGoogleUserInformation(accessToken)).willReturn(socialId); // socialId를 반환하도록 목 설정
+        given(oAuth2Util.getGoogleUserIdToken(accessToken)).willReturn(socialId); // socialId를 반환하도록 목 설정
         given(userRepository.findBySocialIdAndEProvider(socialId, loginProvider)).willReturn(Optional.empty()); // 사용자를 찾을 때 빈 Optional을 반환하도록 목 설정
 
         User user = User.builder()
@@ -67,7 +67,7 @@ class AuthServiceTest {
         // Then
         assertNotNull(result); // 반환된 결과가 null이 아닌지 확인
         assertEquals(jwtTokenDto, result.jwtTokenDto()); // 반환된 JWT 토큰이 예상한 JWT 토큰과 일치하는지 검증
-        verify(oAuth2Util, times(1)).getGoogleUserInformation(accessToken);
+        verify(oAuth2Util, times(1)).getGoogleUserIdToken(accessToken);
         verify(userRepository, times(1)).findBySocialIdAndEProvider(socialId, loginProvider);
         verify(jwtUtil, times(1)).generateTokens(user.getId(), user.getRole());
     }
