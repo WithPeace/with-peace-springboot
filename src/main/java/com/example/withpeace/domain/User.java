@@ -56,25 +56,29 @@ public class User {
     @Column(name = "email")
     private String email;
 
-    @Column(name = "nickname")
+    @Column(name = "nickname", unique = true)
     private String nickname;
 
     @Builder
-    public User(String socialId, EProvider eProvider, ERole role) {
+    public User(String socialId, EProvider eProvider, ERole role, String email) {
         this.socialId = socialId;
         this.eProvider = eProvider;
         this.role = role;
         this.createDate = LocalDate.now();
         this.isLogin = false;
         this.profileImage = "default.png";
-    }
-
-    public void register(String email, String nickname, String deviceToken) {
         this.email = email;
-        this.nickname = nickname;
-        this.deviceToken = deviceToken;
     }
 
+    public void updateNickname(String nickname) {
+        if(nickname != this.nickname){
+            this.nickname = nickname;
+        }
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
     public void setRole(ERole role) {
         this.role = role;
     }

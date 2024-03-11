@@ -4,7 +4,7 @@ import com.example.withpeace.annotation.UserId;
 import com.example.withpeace.constant.Constant;
 import com.example.withpeace.dto.JwtTokenDto;
 import com.example.withpeace.dto.ResponseDto;
-import com.example.withpeace.dto.request.SocialRegisterDto;
+import com.example.withpeace.dto.request.SocialRegisterRequestDto;
 import com.example.withpeace.dto.response.LoginResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
@@ -12,6 +12,7 @@ import com.example.withpeace.service.AuthService;
 import com.example.withpeace.type.EProvider;
 import com.example.withpeace.util.HeaderUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,8 +36,8 @@ public class AuthController {
 
     //최초 회원가입
     @PostMapping("/register")
-    public ResponseDto<JwtTokenDto> register(@UserId Long userId, @RequestBody SocialRegisterDto socialRegisterDto) {
-        return ResponseDto.ok(authService.register(userId,socialRegisterDto));
+    public ResponseDto<JwtTokenDto> register(@UserId Long userId, @RequestBody @Valid SocialRegisterRequestDto socialRegisterRequestDto) {
+        return ResponseDto.ok(authService.register(userId, socialRegisterRequestDto));
     }
 
     //Refresh Token 으로 Access Token 재발급

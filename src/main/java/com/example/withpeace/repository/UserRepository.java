@@ -19,6 +19,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<UserSecurityForm> findByRefreshToken(String refreshToken);
 
+    Optional<User> findByNickname(String nickname);
+
     @Transactional
     @Modifying
     @Query("UPDATE User u SET u.refreshToken = :refreshToken, u.isLogin = :status WHERE u.id = :id")
