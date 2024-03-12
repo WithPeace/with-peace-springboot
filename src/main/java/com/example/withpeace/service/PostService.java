@@ -11,7 +11,6 @@ import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.ImageRepository;
 import com.example.withpeace.repository.PostRepository;
 import com.example.withpeace.repository.UserRepository;
-import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,6 @@ public class PostService {
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
     private final AmazonS3 amazonS3;
-    private final EntityManager entityManager;
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
     @Value("${cloud.aws.s3.endpoint}")
@@ -39,14 +37,12 @@ public class PostService {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
 
-        Post post = postRepository.save(Post.builder()
+        Post post = postRepository.saveAndFlush(Post.builder()
                 .writer(user)
                 .title(postRegisterRequestDto.title())
                 .content(postRegisterRequestDto.content())
                 .type(postRegisterRequestDto.type())
                 .build());
-
-        entityManager.flush();
 
         // imageFiles가 비어있지 않은 경우에만 uploadImages 메소드를 호출합니다.
         if (postRegisterRequestDto.imageFiles() != null && !postRegisterRequestDto.imageFiles().isEmpty()) {
