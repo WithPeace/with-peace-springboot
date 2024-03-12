@@ -48,16 +48,5 @@ public class Post {
         this.type = type;
         this.createDate = LocalDate.now();
     }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public void setType(ETopic type) {
-        this.type = type;
-    }
+    
 }
