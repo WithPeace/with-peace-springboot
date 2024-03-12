@@ -13,5 +13,5 @@ public record PostRegisterRequestDto(
         @NotBlank @JsonProperty("title") String title,
         @NotBlank @JsonProperty("content") String content,
         @NotNull @JsonProperty("type") ETopic type,
-        @Nullable @JsonProperty("imageFiles") List<MultipartFile> imageFiles){
+        @Nullable @JsonProperty("imageFiles") ){
 }
