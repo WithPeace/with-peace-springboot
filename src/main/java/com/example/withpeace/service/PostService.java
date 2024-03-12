@@ -33,7 +33,7 @@ public class PostService {
     private String endpoint;
 
     @Transactional
-    public Long registerPost(Long userId, PostRegisterRequestDto postRegisterRequestDto) {
+    public Long registerPost(Long userId, PostRegisterRequestDto postRegisterRequestDto, List<MultipartFile> imageFiles) {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
 
@@ -45,8 +45,8 @@ public class PostService {
                 .build());
 
         // imageFiles가 비어있지 않은 경우에만 uploadImages 메소드를 호출합니다.
-        if (postRegisterRequestDto.imageFiles() != null && !postRegisterRequestDto.imageFiles().isEmpty()) {
-            uploadImages(post.getId(), postRegisterRequestDto.imageFiles());
+        if (imageFiles != null && !imageFiles.isEmpty()) {
+            uploadImages(post.getId(), imageFiles);
         }
 
         return post.getId();
