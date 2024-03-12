@@ -31,6 +31,8 @@ public class PostService {
     private final EntityManager entityManager;
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
+    @Value("${cloud.aws.s3.endpoint}")
+    private String endpoint;
 
     @Transactional
     public Long registerPost(Long userId, PostRegisterRequestDto postRegisterRequestDto) {
@@ -58,12 +60,14 @@ public class PostService {
     private void uploadImages(Long postId, List<MultipartFile> imageFiles) {
         Post post = postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
 
+        int idx = 0;
         for (MultipartFile file : imageFiles) {
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentType(file.getContentType());
             metadata.setContentLength(file.getSize());
-            String fileName = file.getOriginalFilename();
-            String fileUrl = "https://" + bucket + "/postImage/" + postId + "/" + fileName;
+
+            String fileName = idx + "_" + file.getOriginalFilename();
+            String fileUrl = endpoint + "/" + bucket + "/postImage/" + postId + "/" + fileName;
             try {
                 amazonS3.putObject(bucket, "postImage/" + postId + "/" + fileName, file.getInputStream(), metadata);
                 Image image = imageRepository.save(Image.builder()
@@ -73,6 +77,8 @@ public class PostService {
             } catch (Exception e) {
                 throw new CommonException(ErrorCode.POST_FILE_UPLOAD_ERROR);
             }
+
+            idx++;
         }
 
     }
