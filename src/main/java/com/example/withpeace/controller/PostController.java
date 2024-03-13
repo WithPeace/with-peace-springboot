@@ -25,10 +25,10 @@ public class PostController {
     // 게시글 등록
     @PostMapping("/register")
     public ResponseDto<PostRegisterResponseDto> registerPost(@UserId Long userId,
-                                                             @Valid @RequestPart("postRegisterRequest") PostRegisterRequestDto postRegisterRequestDto,
-                                                             @RequestPart("imageFiles") Optional<List<MultipartFile>> imageFilesOptional) {
-        List<MultipartFile> imageFiles = imageFilesOptional.orElse(Collections.emptyList());
-        Long postId = postService.registerPost(userId, postRegisterRequestDto, imageFiles);
+                                                             @Valid @ModelAttribute("postRegisterRequest") PostRegisterRequestDto postRegisterRequestDto,
+                                                             @RequestParam(value = "imageFiles", required = false) List<MultipartFile> imageFiles) {
+        List<MultipartFile> file = Optional.ofNullable(imageFiles).orElse(Collections.emptyList());
+        Long postId = postService.registerPost(userId, postRegisterRequestDto, file);
         return ResponseDto.ok(new PostRegisterResponseDto(postId));
     }
 }
