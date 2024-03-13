@@ -10,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 
 @RestController
@@ -24,7 +26,8 @@ public class PostController {
     @PostMapping("/register")
     public ResponseDto<PostRegisterResponseDto> registerPost(@UserId Long userId,
                                                              @Valid @RequestPart("postRegisterRequest") PostRegisterRequestDto postRegisterRequestDto,
-                                                             @RequestPart("imageFiles") List<MultipartFile> imageFiles) {
+                                                             @RequestPart("imageFiles") Optional<List<MultipartFile>> imageFilesOptional) {
+        List<MultipartFile> imageFiles = imageFilesOptional.orElse(Collections.emptyList());
         Long postId = postService.registerPost(userId, postRegisterRequestDto, imageFiles);
         return ResponseDto.ok(new PostRegisterResponseDto(postId));
     }
