@@ -30,8 +30,8 @@ public class UserController {
     }
 
     @PutMapping("profile")
-    public ResponseDto<?> updateProfile(@UserId Long userId, @Valid @RequestPart NicknameRequestDto nickname,
-                                        @RequestPart MultipartFile file) {
+    public ResponseDto<?> updateProfile(@UserId Long userId, @Valid @ModelAttribute NicknameRequestDto nickname,
+                                        @RequestPart("imageFile") MultipartFile file) {
         return ResponseDto.ok(userService.updateProfile(userId,nickname.nickname(),file));
     }
 
@@ -41,7 +41,7 @@ public class UserController {
     }
 
     @PatchMapping("profile/image")
-    public ResponseDto<?> updateProfileImage(@UserId Long userId, @RequestParam("file") MultipartFile file) {
+    public ResponseDto<?> updateProfileImage(@UserId Long userId, @RequestPart("imageFile") MultipartFile file) {
         return ResponseDto.ok(userService.updateProfileImage(userId, file));
     }
 
