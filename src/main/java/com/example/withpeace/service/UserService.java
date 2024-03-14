@@ -23,7 +23,7 @@ public class UserService {
     private final AmazonS3 amazonS3;
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
-    @Value("${cloud.aws.s3.endpoint}")
+    @Value("${cloud.aws.s3.static}")
     private String endpoint;
 
     public Boolean withdrawalUser(Long userId) {
@@ -53,7 +53,7 @@ public class UserService {
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
         user.updateNickname(nickname);
         if (file != null) {
-            String fileUrl = endpoint + "/" + bucket + "/userProfile/" + userId;
+            String fileUrl = endpoint + "/userProfile/" + userId;
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentType(file.getContentType());
             metadata.setContentLength(file.getSize());
@@ -80,7 +80,7 @@ public class UserService {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
         try {
-            String fileUrl = endpoint + "/" + bucket + "/userProfile/" + userId;
+            String fileUrl = endpoint + "/userProfile/" + userId;
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentType(file.getContentType());
             metadata.setContentLength(file.getSize());
