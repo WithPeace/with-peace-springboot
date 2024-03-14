@@ -65,6 +65,7 @@ cloud:
     s3:
       bucket: withpeace
       endpoint: https://kr.object.ncloudstorage.com
+      static : http://withpeace.s3-website.kr.object.ncloudstorage.com
     region:
       static: ap-northeast-2
     stack:

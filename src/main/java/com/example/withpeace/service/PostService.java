@@ -29,7 +29,7 @@ public class PostService {
     private final AmazonS3 amazonS3;
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
-    @Value("${cloud.aws.s3.endpoint}")
+    @Value("${cloud.aws.s3.static}")
     private String endpoint;
 
     @Transactional
@@ -63,10 +63,10 @@ public class PostService {
             metadata.setContentLength(file.getSize());
 
             String fileName = idx + "_" + file.getOriginalFilename();
-            String fileUrl = endpoint + "/" + bucket + "/postImage/" + postId + "/" + fileName;
+            String fileUrl = endpoint + "/postImage/" + postId + "/" + fileName;
             try {
                 amazonS3.putObject(bucket, "postImage/" + postId + "/" + fileName, file.getInputStream(), metadata);
-                Image image = imageRepository.save(Image.builder()
+                imageRepository.save(Image.builder()
                         .post(post)
                         .url(fileUrl)
                         .build());
