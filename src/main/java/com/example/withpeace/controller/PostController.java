@@ -3,6 +3,7 @@ package com.example.withpeace.controller;
 import com.example.withpeace.annotation.UserId;
 import com.example.withpeace.dto.ResponseDto;
 import com.example.withpeace.dto.request.PostRegisterRequestDto;
+import com.example.withpeace.dto.response.PostDetailResponseDto;
 import com.example.withpeace.dto.response.PostRegisterResponseDto;
 import com.example.withpeace.service.PostService;
 import jakarta.validation.Valid;
@@ -30,5 +31,11 @@ public class PostController {
         List<MultipartFile> file = Optional.ofNullable(imageFiles).orElse(Collections.emptyList());
         Long postId = postService.registerPost(userId, postRegisterRequestDto, file);
         return ResponseDto.ok(new PostRegisterResponseDto(postId));
+    }
+
+    // 게시글 상세조회
+    @GetMapping("/{postId}")
+    public ResponseDto<PostDetailResponseDto> getPostDetail(@UserId Long userId, @PathVariable Long postId) {
+        return ResponseDto.ok(postService.getPostDetail(userId, postId));
     }
 }
