@@ -5,9 +5,12 @@ import com.example.withpeace.annotation.UserId;
 import com.example.withpeace.dto.ResponseDto;
 import com.example.withpeace.dto.request.NicknameRequestDto;
 import com.example.withpeace.service.UserService;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,10 +32,10 @@ public class UserController {
         return ResponseDto.ok(userService.withdrawalUser(userId));
     }
 
-    @PutMapping("profile")
+    @PutMapping(value = "profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseDto<?> updateProfile(@UserId Long userId, @Valid @ModelAttribute NicknameRequestDto nickname,
-                                        @RequestPart("imageFile") MultipartFile file) {
-        return ResponseDto.ok(userService.updateProfile(userId,nickname.nickname(),file));
+                                        @Parameter(description = "Image file", required = true, content = @Content(mediaType = "multipart/form-data")) @RequestPart("imageFile") MultipartFile file) {
+        return ResponseDto.ok(userService.updateProfile(userId, nickname.nickname(), file));
     }
 
     @PatchMapping("profile/nickname")
@@ -40,7 +43,7 @@ public class UserController {
         return ResponseDto.ok(userService.updateNickname(userId, nickname.nickname()));
     }
 
-    @PatchMapping("profile/image")
+    @PatchMapping(value = "profile/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseDto<?> updateProfileImage(@UserId Long userId, @RequestPart("imageFile") MultipartFile file) {
         return ResponseDto.ok(userService.updateProfileImage(userId, file));
     }
