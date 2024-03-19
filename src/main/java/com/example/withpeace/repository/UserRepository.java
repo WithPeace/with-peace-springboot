@@ -18,8 +18,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<UserSecurityForm> findByIdAndIsLoginAndRefreshTokenIsNotNull(Long id, boolean b);
 
     Optional<UserSecurityForm> findByRefreshToken(String refreshToken);
-
-    Optional<User> findByNickname(String nickname);
+    Boolean existsByNickname(String nickname);
 
     @Transactional
     @Modifying

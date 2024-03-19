@@ -103,5 +103,9 @@ public class UserService {
         return user.getProfileImage();
     }
 
+    public Boolean checkNickname(String nickname) {
+        return userRepository.existsByNickname(nickname);
+    }
+
 
 }

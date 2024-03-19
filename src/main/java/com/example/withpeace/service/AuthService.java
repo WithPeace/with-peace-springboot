@@ -72,10 +72,6 @@ public class AuthService {
 
     @Transactional
     public JwtTokenDto register(Long userId, SocialRegisterRequestDto socialRegisterRequestDto) {
-        // 닉네임 중복 체크
-        userRepository.findByNickname(socialRegisterRequestDto.nickname()).ifPresent(user -> {
-            throw new CommonException(ErrorCode.DUPLICATE_RESOURCE);
-        });
         User user = userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
 
         user.setNickname(socialRegisterRequestDto.nickname());
