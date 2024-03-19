@@ -25,7 +25,7 @@ public class PostController {
     private final PostService postService;
 
     // 게시글 등록
-    @PostMapping(name = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseDto<PostRegisterResponseDto> registerPost(@UserId Long userId,
                                                              @Valid @ModelAttribute("postRegisterRequest") PostRegisterRequestDto postRegisterRequestDto,
                                                              @RequestPart(value = "imageFiles", required = false) List<MultipartFile> imageFiles) {
