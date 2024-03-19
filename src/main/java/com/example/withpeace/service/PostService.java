@@ -30,7 +30,6 @@ public class PostService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
-    private final TimeFormatter timeFormatter;
     private final AmazonS3 amazonS3;
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -91,7 +90,7 @@ public class PostService {
         Post post =
                 postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
 
-        String formatterDate = timeFormatter.timeFormat(post.getCreateDate());
+        String formatterDate = TimeFormatter.timeFormat(post.getCreateDate());
 
         List<String> postImageUrls = Optional.ofNullable(imageRepository.findUrlsByPostId(post))
                                                 .orElse(Collections.emptyList());
@@ -99,6 +98,8 @@ public class PostService {
 
         PostDetailResponseDto postDetailResponseDto =
                 PostDetailResponseDto.builder()
+                        .postId(postId)
+                        .userId(userId)
                         .nickname(user.getNickname())
                         .profileImageUrl(user.getProfileImage())
                         .title(post.getTitle())

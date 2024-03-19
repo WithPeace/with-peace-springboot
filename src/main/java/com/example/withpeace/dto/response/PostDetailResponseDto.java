@@ -7,6 +7,8 @@ import java.util.List;
 
 @Builder
 public record PostDetailResponseDto(
+        Long postId,
+        Long userId,
         String nickname,
         String profileImageUrl,
         String title,
