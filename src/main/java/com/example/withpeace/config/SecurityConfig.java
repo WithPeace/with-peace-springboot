@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("api/v1/auth/**").permitAll()
                         .requestMatchers("api/v1/users/**").hasAnyRole((ERole.USER.toString()),ERole.ADMIN.toString())
                         .requestMatchers("api/v1/admin/**").hasRole(ERole.ADMIN.toString())
+                        .requestMatchers("/api/v1/posts/register").hasAnyRole((ERole.USER.toString()),ERole.ADMIN.toString())
                         .anyRequest().authenticated())
 
                 .logout(configurer ->

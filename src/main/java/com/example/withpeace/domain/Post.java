@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 
 @Entity
@@ -37,7 +38,7 @@ public class Post {
     private ETopic type;
 
     @Column(name = "create_date", nullable = false)
-    private LocalDate createDate;
+    private LocalDateTime createDate;
 
 
     @Builder
@@ -46,7 +47,7 @@ public class Post {
         this.title = title;
         this.content = content;
         this.type = type;
-        this.createDate = LocalDate.now();
+        this.createDate = LocalDateTime.now();
     }
     
 }

@@ -6,18 +6,22 @@ import com.example.withpeace.domain.Image;
 import com.example.withpeace.domain.User;
 import com.example.withpeace.domain.Post;
 import com.example.withpeace.dto.request.PostRegisterRequestDto;
+import com.example.withpeace.dto.response.PostDetailResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.ImageRepository;
 import com.example.withpeace.repository.PostRepository;
 import com.example.withpeace.repository.UserRepository;
+import com.example.withpeace.util.TimeFormatter;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -77,5 +81,34 @@ public class PostService {
             idx++;
         }
 
+    }
+
+    @Transactional
+    public PostDetailResponseDto getPostDetail(Long userId, Long postId) {
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        Post post =
+                postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
+
+        String formatterDate = TimeFormatter.timeFormat(post.getCreateDate());
+
+        List<String> postImageUrls = Optional.ofNullable(imageRepository.findUrlsByPostId(post))
+                                                .orElse(Collections.emptyList());
+
+
+        PostDetailResponseDto postDetailResponseDto =
+                PostDetailResponseDto.builder()
+                        .postId(postId)
+                        .userId(userId)
+                        .nickname(user.getNickname())
+                        .profileImageUrl(user.getProfileImage())
+                        .title(post.getTitle())
+                        .content(post.getContent())
+                        .type(post.getType())
+                        .createDate(formatterDate)
+                        .postImageUrls(postImageUrls)
+                        .build();
+
+        return postDetailResponseDto;
     }
 }
