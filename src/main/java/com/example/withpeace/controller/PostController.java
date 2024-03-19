@@ -8,6 +8,7 @@ import com.example.withpeace.dto.response.PostRegisterResponseDto;
 import com.example.withpeace.service.PostService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,7 +25,7 @@ public class PostController {
     private final PostService postService;
 
     // 게시글 등록
-    @PostMapping("/register")
+    @PostMapping(name = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseDto<PostRegisterResponseDto> registerPost(@UserId Long userId,
                                                              @Valid @ModelAttribute("postRegisterRequest") PostRegisterRequestDto postRegisterRequestDto,
                                                              @RequestPart(value = "imageFiles", required = false) List<MultipartFile> imageFiles) {
