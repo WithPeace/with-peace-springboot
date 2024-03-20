@@ -130,8 +130,7 @@ public class PostService {
 
         List<PostListResponseDto> postListResponseDtos = postPage.getContent().stream()
                 .map(post -> {
-                    String postImageUrl = imageRepository.findUrlsByPostIdOrderByIdAsc(post, imagePageable)
-                            .flatMap(urls -> urls.stream().findFirst())
+                    String postImageUrl = imageRepository.findUrlsByPostIdOrderByIdAsc(post.getId())
                             .orElse(null);
                     return PostListResponseDto.from(post, postImageUrl);
                 })
