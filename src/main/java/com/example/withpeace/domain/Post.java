@@ -49,5 +49,7 @@ public class Post {
         this.type = type;
         this.createDate = LocalDateTime.now();
     }
+
+    public Long getId() { return id; }
     
 }

@@ -5,6 +5,7 @@ import com.example.withpeace.domain.Post;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -16,7 +17,8 @@ public interface ImageRepository extends JpaRepository<Image, Long> {
     @Query("SELECT i.url FROM Image i WHERE i.post = :post")
     List<String> findUrlsByPostId(Post post);
 
-    @Query("SELECT i.url FROM Image i WHERE i.post = :post ORDER BY i.id ASC")
-    Optional<List<String>> findUrlsByPostIdOrderByIdAsc(Post post, Pageable pageable);
+    @Query(value = "SELECT i.url FROM images i WHERE i.post_id = :postId ORDER BY i.id ASC LIMIT 1",
+            nativeQuery = true)
+    Optional<String> findUrlsByPostIdOrderByIdAsc(@Param("postId") Long postId);
 
 }
