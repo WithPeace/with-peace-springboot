@@ -7,14 +7,19 @@ import com.example.withpeace.domain.User;
 import com.example.withpeace.domain.Post;
 import com.example.withpeace.dto.request.PostRegisterRequestDto;
 import com.example.withpeace.dto.response.PostDetailResponseDto;
+import com.example.withpeace.dto.response.PostListResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.ImageRepository;
 import com.example.withpeace.repository.PostRepository;
 import com.example.withpeace.repository.UserRepository;
+import com.example.withpeace.type.ETopic;
 import com.example.withpeace.util.TimeFormatter;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -110,5 +116,26 @@ public class PostService {
                         .build();
 
         return postDetailResponseDto;
+    }
+
+    @Transactional
+    public List<PostListResponseDto> getPostList(Long userId, ETopic type, Integer pageIndex, Integer pageSize) {
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+
+        Pageable pageable = PageRequest.of(pageIndex, pageSize);
+        Page<Post> postPage = postRepository.findByType(type, pageable);
+
+        Pageable imagePageable = PageRequest.of(0, 1);
+
+        List<PostListResponseDto> postListResponseDtos = postPage.getContent().stream()
+                .map(post -> {
+                    String postImageUrl = imageRepository.findUrlsByPostIdOrderByIdAsc(post.getId())
+                            .orElse(null);
+                    return PostListResponseDto.from(post, postImageUrl);
+                })
+                .collect(Collectors.toList());
+
+        return postListResponseDtos;
     }
 }

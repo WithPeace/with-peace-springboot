@@ -6,7 +6,10 @@ import com.example.withpeace.dto.request.PostRegisterRequestDto;
 import com.example.withpeace.dto.response.PostDetailResponseDto;
 import com.example.withpeace.dto.response.PostRegisterResponseDto;
 import com.example.withpeace.service.PostService;
+import com.example.withpeace.type.ETopic;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +28,7 @@ public class PostController {
     private final PostService postService;
 
     // 게시글 등록
-    @PostMapping(name = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseDto<PostRegisterResponseDto> registerPost(@UserId Long userId,
                                                              @Valid @ModelAttribute("postRegisterRequest") PostRegisterRequestDto postRegisterRequestDto,
                                                              @RequestPart(value = "imageFiles", required = false) List<MultipartFile> imageFiles) {
@@ -38,5 +41,14 @@ public class PostController {
     @GetMapping("/{postId}")
     public ResponseDto<PostDetailResponseDto> getPostDetail(@UserId Long userId, @PathVariable Long postId) {
         return ResponseDto.ok(postService.getPostDetail(userId, postId));
+    }
+
+    // 게시글 리스트 조회
+    @GetMapping("")
+    public ResponseDto<?> getPostList(@UserId Long userId,
+                                      @RequestParam ETopic type,
+                                      @RequestParam(defaultValue = "0") @Valid @NotNull @Min(0) Integer pageIndex,
+                                      @RequestParam(defaultValue = "1") @Valid @NotNull @Min(1) Integer pageSize) {
+        return ResponseDto.ok(postService.getPostList(userId, type, pageIndex, pageSize));
     }
 }
