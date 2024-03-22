@@ -96,11 +96,8 @@ public class PostService {
         Post post =
                 postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
 
-        String formatterDate = TimeFormatter.timeFormat(post.getCreateDate());
-
         List<String> postImageUrls = Optional.ofNullable(imageRepository.findUrlsByPostId(post))
                                                 .orElse(Collections.emptyList());
-
 
         PostDetailResponseDto postDetailResponseDto =
                 PostDetailResponseDto.builder()
@@ -111,7 +108,7 @@ public class PostService {
                         .title(post.getTitle())
                         .content(post.getContent())
                         .type(post.getType())
-                        .createDate(formatterDate)
+                        .createDate(TimeFormatter.timeFormat(post.getCreateDate()))
                         .postImageUrls(postImageUrls)
                         .build();
 
@@ -125,8 +122,6 @@ public class PostService {
 
         Pageable pageable = PageRequest.of(pageIndex, pageSize);
         Page<Post> postPage = postRepository.findByType(type, pageable);
-
-        Pageable imagePageable = PageRequest.of(0, 1);
 
         List<PostListResponseDto> postListResponseDtos = postPage.getContent().stream()
                 .map(post -> {
