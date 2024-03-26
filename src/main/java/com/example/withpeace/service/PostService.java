@@ -1,6 +1,7 @@
 package com.example.withpeace.service;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.example.withpeace.domain.Image;
 import com.example.withpeace.domain.User;
@@ -81,7 +82,7 @@ public class PostService {
                         .url(fileUrl)
                         .build());
             } catch (Exception e) {
-                throw new CommonException(ErrorCode.POST_FILE_UPLOAD_ERROR);
+                throw new CommonException(ErrorCode.POST_ERROR);
             }
 
             idx++;
@@ -133,4 +134,30 @@ public class PostService {
 
         return postListResponseDtos;
     }
+
+    @Transactional
+    public Boolean deletePost(Long userId, Long postId) {
+        userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        Post post =
+                postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
+
+        try {
+            // DB에서 image 삭제
+            imageRepository.deleteImagesByPost(post);
+
+            // S3에서 image 삭제
+            DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucket);
+            // 해당 경로로 시작하는 모든 객체를 삭제 대상에 추가함
+            deleteObjectsRequest.withKeys("postImage/" + postId);
+            amazonS3.deleteObjects(deleteObjectsRequest);
+
+            // 게시물 삭제
+            postRepository.delete(post);
+
+            return true;
+        } catch (Exception e) {
+            throw new CommonException(ErrorCode.POST_ERROR);
+        }
+    }
+
 }

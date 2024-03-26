@@ -14,4 +14,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     @Query(value = "SELECT p FROM Post p WHERE p.type=:type ORDER BY p.createDate DESC")
     Page<Post> findByType(ETopic type, Pageable pageable);
+
+    void delete(Post post);
 }
