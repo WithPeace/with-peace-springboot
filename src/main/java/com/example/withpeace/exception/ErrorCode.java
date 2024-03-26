@@ -39,7 +39,7 @@ public enum ErrorCode {
 
     SERVER_ERROR(50000, HttpStatus.INTERNAL_SERVER_ERROR, "서버 에러 입니다."),
     AUTH_SERVER_USER_INFO_ERROR(50001, HttpStatus.INTERNAL_SERVER_ERROR, "인증 서버 사용자 정보 조회에 실패하였습니다."),
-    POST_FILE_UPLOAD_ERROR(50002, HttpStatus.INTERNAL_SERVER_ERROR, "서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    POST_ERROR(50002, HttpStatus.INTERNAL_SERVER_ERROR, "서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
 
 
     private final Integer code;

@@ -82,7 +82,7 @@ public class PostService {
                         .url(fileUrl)
                         .build());
             } catch (Exception e) {
-                throw new CommonException(ErrorCode.POST_FILE_UPLOAD_ERROR);
+                throw new CommonException(ErrorCode.POST_ERROR);
             }
 
             idx++;
@@ -136,7 +136,7 @@ public class PostService {
     }
 
     @Transactional
-    public String deletePost(Long userId, Long postId) {
+    public Boolean deletePost(Long userId, Long postId) {
         userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
         Post post =
                 postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
@@ -154,9 +154,9 @@ public class PostService {
             // 게시물 삭제
             postRepository.delete(post);
 
-            return "delete post success";
+            return true;
         } catch (Exception e) {
-            throw new CommonException(ErrorCode.POST_FILE_UPLOAD_ERROR);
+            throw new CommonException(ErrorCode.POST_ERROR);
         }
     }
 
