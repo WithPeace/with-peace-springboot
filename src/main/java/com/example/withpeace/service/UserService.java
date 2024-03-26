@@ -19,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;
     private final AmazonS3 amazonS3;
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -59,6 +58,24 @@ public class UserService {
             metadata.setContentLength(file.getSize());
             try {
                 amazonS3.putObject(bucket, "userProfile/" + userId, file.getInputStream(), metadata);
+                user.updateProfileImage(fileUrl);
+            } catch (Exception e) {
+                throw new CommonException(ErrorCode.FILE_UPLOAD_ERROR);
+            }
+        }
+        return user.getProfileImage();
+    }
+
+    @Transactional
+    public String updateProfile(User user, String nickname, MultipartFile file) {
+        user.updateNickname(nickname);
+        if (file != null) {
+            String fileUrl = endpoint + "/userProfile/" + user.getId();
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentType(file.getContentType());
+            metadata.setContentLength(file.getSize());
+            try {
+                amazonS3.putObject(bucket, "userProfile/" + user.getId(), file.getInputStream(), metadata);
                 user.updateProfileImage(fileUrl);
             } catch (Exception e) {
                 throw new CommonException(ErrorCode.FILE_UPLOAD_ERROR);

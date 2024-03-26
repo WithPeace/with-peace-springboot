@@ -13,6 +13,7 @@ public class Constant {
     public static final List<String> NO_NEED_AUTH_URLS = List.of(
             "/api/v1/auth/google",
             "/api/v1/auth/refresh",
+            "/api/v1/users/profile/nickname/check",
             "/v3/api-docs",
             "/swagger-ui/index.html",
             "/swagger-ui/swagger-ui.css",
