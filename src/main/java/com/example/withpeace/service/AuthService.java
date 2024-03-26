@@ -15,6 +15,7 @@ import com.example.withpeace.util.OAuth2Util;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -24,6 +25,8 @@ import java.util.Optional;
 public class AuthService {
 
     private final UserRepository userRepository;
+
+    private final UserService userService;
     private final JwtUtil jwtUtil;
     private final OAuth2Util oAuth2Util;
 
@@ -71,13 +74,12 @@ public class AuthService {
     }
 
     @Transactional
-    public JwtTokenDto register(Long userId, SocialRegisterRequestDto socialRegisterRequestDto) {
+    public JwtTokenDto register(Long userId, SocialRegisterRequestDto socialRegisterRequestDto, MultipartFile file) {
         User user = userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
 
-        user.setNickname(socialRegisterRequestDto.nickname());
+        userService.updateProfile(user, socialRegisterRequestDto.nickname(), file);
         user.setRole(ERole.USER);
         user.setLogin(true);
-
         final JwtTokenDto jwtTokenDto = jwtUtil.generateTokens(user.getId(), user.getRole());
         user.setRefreshToken(jwtTokenDto.getRefreshToken());
 
@@ -90,7 +92,7 @@ public class AuthService {
                         .orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
 
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getRole(), jwtUtil.getAccessTokenExpriration());
-        return new JwtTokenDto(accessToken,refreshToken.substring(Constant.BEARER_PREFIX.length()));
+        return new JwtTokenDto(accessToken, refreshToken.substring(Constant.BEARER_PREFIX.length()));
     }
 
 }

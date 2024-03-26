@@ -98,7 +98,7 @@ public class PostService {
                 postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
 
         List<String> postImageUrls = Optional.ofNullable(imageRepository.findUrlsByPostId(post))
-                                                .orElse(Collections.emptyList());
+                .orElse(Collections.emptyList());
 
         PostDetailResponseDto postDetailResponseDto =
                 PostDetailResponseDto.builder()
