@@ -78,7 +78,8 @@ public class AuthService {
         User user = userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
 
         userService.updateProfile(user, socialRegisterRequestDto.nickname(), file);
-
+        user.setRole(ERole.USER);
+        user.setLogin(true);
         final JwtTokenDto jwtTokenDto = jwtUtil.generateTokens(user.getId(), user.getRole());
         user.setRefreshToken(jwtTokenDto.getRefreshToken());
 
