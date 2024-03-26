@@ -51,4 +51,10 @@ public class PostController {
                                       @RequestParam(defaultValue = "1") @Valid @NotNull @Min(1) Integer pageSize) {
         return ResponseDto.ok(postService.getPostList(userId, type, pageIndex, pageSize));
     }
+
+    // 게시글 삭제
+    @DeleteMapping("/{postId}")
+    public ResponseDto<?> deletePost(@UserId Long userId, @PathVariable Long postId) {
+        return ResponseDto.ok(postService.deletePost(userId, postId));
+    }
 }
