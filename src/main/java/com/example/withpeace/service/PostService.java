@@ -152,7 +152,7 @@ public class PostService {
             amazonS3.deleteObjects(deleteObjectsRequest);
 
             // 게시물 삭제
-            postRepository.deletePostById(postId);
+            postRepository.delete(post);
 
             return "delete post success";
         } catch (Exception e) {
