@@ -38,6 +38,7 @@ public class UserService {
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
         UserProfileResponseDto userProfileResponseDto =
                 UserProfileResponseDto.builder()
+                        .userId(user.getId())
                         .profileImageUrl(user.getProfileImage())
                         .email(user.getEmail())
                         .nickname(user.getNickname())
