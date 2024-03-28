@@ -3,6 +3,7 @@ package com.example.withpeace.exception;
 
 import com.example.withpeace.dto.ResponseDto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -39,7 +40,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseDto<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         log.error("Handler in MethodArgumentNotValidException Error Message = " + e.getMessage());
-        return ResponseDto.fail(e);
+        return ResponseDto.fail(new CommonException(ErrorCode.INVALID_ARGUMENT));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -58,6 +59,12 @@ public class GlobalExceptionHandler {
     public ResponseDto<?> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
         log.error("Handler in MissingServletRequestParameterException Error Message = " + e.getMessage());
         return ResponseDto.fail(new CommonException(ErrorCode.MISSING_REQUEST_PARAMETER));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseDto<?> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
+        log.error("Handler in DataIntegrityViolationException Error Message = " + e.getMessage());
+        return ResponseDto.fail(new CommonException(ErrorCode.DUPLICATE_RESOURCE));
     }
 
     @ExceptionHandler(CommonException.class)
