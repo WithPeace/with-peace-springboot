@@ -15,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
@@ -36,8 +37,9 @@ public class AuthController {
 
     //최초 회원가입
     @PostMapping("/register")
-    public ResponseDto<JwtTokenDto> register(@UserId Long userId, @RequestBody @Valid SocialRegisterRequestDto socialRegisterRequestDto) {
-        return ResponseDto.ok(authService.register(userId, socialRegisterRequestDto));
+    public ResponseDto<JwtTokenDto> register(@UserId Long userId, @ModelAttribute @Valid SocialRegisterRequestDto socialRegisterRequestDto,
+                                            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile) {
+        return ResponseDto.ok(authService.register(userId, socialRegisterRequestDto, imageFile));
     }
 
     //Refresh Token 으로 Access Token 재발급

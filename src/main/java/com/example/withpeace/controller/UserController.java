@@ -26,6 +26,11 @@ public class UserController {
         return ResponseDto.ok(userService.getUserProfile(userId));
     }
 
+    @GetMapping("profile/nickname/check")
+    public ResponseDto<?> checkNickname(@RequestParam String nickname) {
+        return ResponseDto.ok(userService.checkNickname(nickname));
+    }
+
     //회원탈퇴
     @DeleteMapping("")
     public ResponseDto<?> withdrawalUser(@UserId Long userId) {

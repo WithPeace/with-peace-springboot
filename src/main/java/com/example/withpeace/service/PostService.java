@@ -1,23 +1,34 @@
 package com.example.withpeace.service;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.example.withpeace.domain.Image;
 import com.example.withpeace.domain.User;
 import com.example.withpeace.domain.Post;
 import com.example.withpeace.dto.request.PostRegisterRequestDto;
+import com.example.withpeace.dto.response.PostDetailResponseDto;
+import com.example.withpeace.dto.response.PostListResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.ImageRepository;
 import com.example.withpeace.repository.PostRepository;
 import com.example.withpeace.repository.UserRepository;
+import com.example.withpeace.type.ETopic;
+import com.example.withpeace.util.TimeFormatter;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -71,11 +82,82 @@ public class PostService {
                         .url(fileUrl)
                         .build());
             } catch (Exception e) {
-                throw new CommonException(ErrorCode.POST_FILE_UPLOAD_ERROR);
+                throw new CommonException(ErrorCode.POST_ERROR);
             }
 
             idx++;
         }
 
     }
+
+    @Transactional
+    public PostDetailResponseDto getPostDetail(Long userId, Long postId) {
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        Post post =
+                postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
+
+        List<String> postImageUrls = Optional.ofNullable(imageRepository.findUrlsByPostId(post))
+                .orElse(Collections.emptyList());
+
+        PostDetailResponseDto postDetailResponseDto =
+                PostDetailResponseDto.builder()
+                        .postId(postId)
+                        .userId(userId)
+                        .nickname(user.getNickname())
+                        .profileImageUrl(user.getProfileImage())
+                        .title(post.getTitle())
+                        .content(post.getContent())
+                        .type(post.getType())
+                        .createDate(TimeFormatter.timeFormat(post.getCreateDate()))
+                        .postImageUrls(postImageUrls)
+                        .build();
+
+        return postDetailResponseDto;
+    }
+
+    @Transactional
+    public List<PostListResponseDto> getPostList(Long userId, ETopic type, Integer pageIndex, Integer pageSize) {
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+
+        Pageable pageable = PageRequest.of(pageIndex, pageSize);
+        Page<Post> postPage = postRepository.findByType(type, pageable);
+
+        List<PostListResponseDto> postListResponseDtos = postPage.getContent().stream()
+                .map(post -> {
+                    String postImageUrl = imageRepository.findUrlsByPostIdOrderByIdAsc(post.getId())
+                            .orElse(null);
+                    return PostListResponseDto.from(post, postImageUrl);
+                })
+                .collect(Collectors.toList());
+
+        return postListResponseDtos;
+    }
+
+    @Transactional
+    public Boolean deletePost(Long userId, Long postId) {
+        userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        Post post =
+                postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
+
+        try {
+            // DB에서 image 삭제
+            imageRepository.deleteImagesByPost(post);
+
+            // S3에서 image 삭제
+            DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucket);
+            // 해당 경로로 시작하는 모든 객체를 삭제 대상에 추가함
+            deleteObjectsRequest.withKeys("postImage/" + postId);
+            amazonS3.deleteObjects(deleteObjectsRequest);
+
+            // 게시물 삭제
+            postRepository.delete(post);
+
+            return true;
+        } catch (Exception e) {
+            throw new CommonException(ErrorCode.POST_ERROR);
+        }
+    }
+
 }

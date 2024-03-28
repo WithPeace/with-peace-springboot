@@ -19,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;
     private final AmazonS3 amazonS3;
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -69,6 +68,24 @@ public class UserService {
     }
 
     @Transactional
+    public String updateProfile(User user, String nickname, MultipartFile file) {
+        user.updateNickname(nickname);
+        if (file != null) {
+            String fileUrl = endpoint + "/userProfile/" + user.getId();
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentType(file.getContentType());
+            metadata.setContentLength(file.getSize());
+            try {
+                amazonS3.putObject(bucket, "userProfile/" + user.getId(), file.getInputStream(), metadata);
+                user.updateProfileImage(fileUrl);
+            } catch (Exception e) {
+                throw new CommonException(ErrorCode.FILE_UPLOAD_ERROR);
+            }
+        }
+        return user.getProfileImage();
+    }
+
+    @Transactional
     public String updateNickname(Long userId, String nickname) {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
@@ -102,6 +119,10 @@ public class UserService {
         amazonS3.deleteObject(bucket, "userProfile/" + userId);
         user.updateProfileImage("default.png");
         return user.getProfileImage();
+    }
+
+    public Boolean checkNickname(String nickname) {
+        return userRepository.existsByNickname(nickname);
     }
 
 
