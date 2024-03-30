@@ -97,7 +97,7 @@ public class PostService {
         Post post =
                 postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
 
-        List<String> postImageUrls = Optional.ofNullable(imageRepository.findUrlsByPostId(post))
+        List<String> postImageUrls = Optional.ofNullable(imageRepository.findUrlsByPost(post))
                 .orElse(Collections.emptyList());
 
         PostDetailResponseDto postDetailResponseDto =
@@ -136,20 +136,44 @@ public class PostService {
     }
 
     @Transactional
+    public Long updatePost(Long userId, Long postId, PostRegisterRequestDto postRegisterRequestDto, List<MultipartFile> imageFiles) {
+        userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        Post post =
+                postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
+
+        Boolean isExistDbImage = imageRepository.existsByPost(post); // DB 이미지 존재 여부
+
+        try {
+            post.setTitle(postRegisterRequestDto.title());
+            post.setContent(postRegisterRequestDto.content());
+            post.setType(postRegisterRequestDto.type());
+
+            if(!imageFiles.isEmpty()) { // 이미지 수정 요청 O
+                if(isExistDbImage) { // 기존 이미지 O
+                    deleteImages(post); // 기존 이미지 모두 삭제
+                    uploadImages(post.getId(), imageFiles); // 요청 이미지 모두 업로드
+                } else { // 기존 이미지 X
+                    uploadImages(post.getId(), imageFiles); // 요청 이미지 모두 업로드
+                }
+            } else if(imageFiles.isEmpty() && isExistDbImage) { // 이미지 수정 요청 X, 기존 이미지 O
+                deleteImages(post); // 기존 이미지 모두 삭제
+            }
+
+            return post.getId();
+        } catch (Exception e) {
+            throw new CommonException(ErrorCode.POST_ERROR);
+        }
+    }
+
+    @Transactional
     public Boolean deletePost(Long userId, Long postId) {
         userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
         Post post =
                 postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
 
         try {
-            // DB에서 image 삭제
-            imageRepository.deleteImagesByPost(post);
-
-            // S3에서 image 삭제
-            DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucket);
-            // 해당 경로로 시작하는 모든 객체를 삭제 대상에 추가함
-            deleteObjectsRequest.withKeys("postImage/" + postId);
-            amazonS3.deleteObjects(deleteObjectsRequest);
+            // DB, S3 이미지 삭제
+            deleteImages(post);
 
             // 게시물 삭제
             postRepository.delete(post);
@@ -158,6 +182,18 @@ public class PostService {
         } catch (Exception e) {
             throw new CommonException(ErrorCode.POST_ERROR);
         }
+    }
+
+    @Transactional
+    private void deleteImages(Post post) {
+        // DB에서 image 삭제
+        imageRepository.deleteImagesByPost(post);
+
+        // S3에서 image 삭제
+        DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucket);
+        // 해당 경로로 시작하는 모든 객체를 삭제 대상에 추가함
+        deleteObjectsRequest.withKeys("postImage/" + post.getId());
+        amazonS3.deleteObjects(deleteObjectsRequest);
     }
 
 }
