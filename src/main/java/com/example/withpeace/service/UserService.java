@@ -48,7 +48,7 @@ public class UserService {
     }
 
     @Transactional
-    public String updateProfile(Long userId, String nickname, MultipartFile file) {
+    public UserProfileResponseDto updateProfile(Long userId, String nickname, MultipartFile file) {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
         user.updateNickname(nickname);
@@ -64,7 +64,15 @@ public class UserService {
                 throw new CommonException(ErrorCode.FILE_UPLOAD_ERROR);
             }
         }
-        return user.getProfileImage();
+        UserProfileResponseDto userProfileResponseDto =
+                UserProfileResponseDto.builder()
+                        .userId(user.getId())
+                        .profileImageUrl(user.getProfileImage())
+                        .email(user.getEmail())
+                        .nickname(user.getNickname())
+                        .build();
+
+        return userProfileResponseDto;
     }
 
     @Transactional
