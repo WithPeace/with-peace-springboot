@@ -52,6 +52,17 @@ public class PostController {
         return ResponseDto.ok(postService.getPostList(userId, type, pageIndex, pageSize));
     }
 
+    // 게시글 수정
+    @PutMapping(value = "/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseDto<PostRegisterResponseDto> updatePost(@UserId Long userId,
+                                                             @PathVariable Long postId,
+                                                             @Valid @ModelAttribute("postUpdateRequest") PostRegisterRequestDto postRegisterRequestDto,
+                                                             @RequestPart(value = "imageFiles", required = false) List<MultipartFile> imageFiles) {
+        List<MultipartFile> file = Optional.ofNullable(imageFiles).orElse(Collections.emptyList());
+        postService.updatePost(userId, postId, postRegisterRequestDto, file);
+        return ResponseDto.ok(new PostRegisterResponseDto(postId));
+    }
+
     // 게시글 삭제
     @DeleteMapping("/{postId}")
     public ResponseDto<?> deletePost(@UserId Long userId, @PathVariable Long postId) {

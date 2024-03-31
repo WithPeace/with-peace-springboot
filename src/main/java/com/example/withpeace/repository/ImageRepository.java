@@ -15,11 +15,13 @@ import java.util.Optional;
 public interface ImageRepository extends JpaRepository<Image, Long> {
 
     @Query("SELECT i.url FROM Image i WHERE i.post = :post")
-    List<String> findUrlsByPostId(Post post);
+    List<String> findUrlsByPost(Post post);
 
     @Query(value = "SELECT i.url FROM images i WHERE i.post_id = :postId ORDER BY i.id ASC LIMIT 1",
             nativeQuery = true)
     Optional<String> findUrlsByPostIdOrderByIdAsc(@Param("postId") Long postId);
+
+    boolean existsByPost(Post post);
 
     @Modifying
     @Query("DELETE FROM Image i WHERE i.post = :post")
