@@ -8,7 +8,6 @@ import com.example.withpeace.dto.response.UserProfileResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.UserRepository;
-import com.example.withpeace.util.JwtUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,16 +52,7 @@ public class UserService {
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
         user.updateNickname(nickname);
         if (file != null) {
-            String fileUrl = endpoint + "/userProfile/" + userId;
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentType(file.getContentType());
-            metadata.setContentLength(file.getSize());
-            try {
-                amazonS3.putObject(bucket, "userProfile/" + userId, file.getInputStream(), metadata);
-                user.updateProfileImage(fileUrl);
-            } catch (Exception e) {
-                throw new CommonException(ErrorCode.FILE_UPLOAD_ERROR);
-            }
+            uploadProfileImage(userId, file, user);
         }
         UserProfileResponseDto userProfileResponseDto =
                 UserProfileResponseDto.builder()
@@ -79,16 +69,7 @@ public class UserService {
     public String updateProfile(User user, String nickname, MultipartFile file) {
         user.updateNickname(nickname);
         if (file != null) {
-            String fileUrl = endpoint + "/userProfile/" + user.getId();
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentType(file.getContentType());
-            metadata.setContentLength(file.getSize());
-            try {
-                amazonS3.putObject(bucket, "userProfile/" + user.getId(), file.getInputStream(), metadata);
-                user.updateProfileImage(fileUrl);
-            } catch (Exception e) {
-                throw new CommonException(ErrorCode.FILE_UPLOAD_ERROR);
-            }
+            uploadProfileImage(user.getId(), file, user);
         }
         return user.getProfileImage();
     }
@@ -105,26 +86,40 @@ public class UserService {
     public String updateProfileImage(Long userId, MultipartFile file) {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        uploadProfileImage(userId, file, user);
+        // image url return
+        return user.getProfileImage();
+    }
+
+    @Transactional
+    public void uploadProfileImage(Long userId, MultipartFile file, User user) {
         try {
-            String fileUrl = endpoint + "/userProfile/" + userId;
+            String fileUrl = null;
+            if (user.getProfileImage() != null && !user.getProfileImage().equals("default.png")) {
+                int index = endpoint.length() + 1;
+                int lastIndex = user.getProfileImage().lastIndexOf("/") + 1;
+                fileUrl = endpoint + "/" + user.getProfileImage().substring(index, lastIndex) + (Integer.parseInt(user.getProfileImage().substring(lastIndex)) + 1);
+                amazonS3.deleteObject(bucket, user.getProfileImage().substring(index));
+            } else {
+                fileUrl = endpoint + "/userProfile/" + userId + "/1";
+            }
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentType(file.getContentType());
             metadata.setContentLength(file.getSize());
-            amazonS3.putObject(bucket, "userProfile/" + userId, file.getInputStream(), metadata);
+            amazonS3.putObject(bucket, fileUrl.substring(endpoint.length() + 1), file.getInputStream(), metadata);
             user.updateProfileImage(fileUrl);
 
         } catch (Exception e) {
             throw new CommonException(ErrorCode.FILE_UPLOAD_ERROR);
         }
-        // image url return
-        return user.getProfileImage();
     }
 
     @Transactional
     public String deleteProfileImage(Long userId) {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
-        amazonS3.deleteObject(bucket, "userProfile/" + userId);
+        int index = endpoint.length() + 1;
+        amazonS3.deleteObject(bucket, user.getProfileImage().substring(index));
         user.updateProfileImage("default.png");
         return user.getProfileImage();
     }
