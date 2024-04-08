@@ -103,7 +103,7 @@ public class PostService {
         PostDetailResponseDto postDetailResponseDto =
                 PostDetailResponseDto.builder()
                         .postId(postId)
-                        .userId(userId)
+                        .userId(post.getWriter().getId())
                         .nickname(user.getNickname())
                         .profileImageUrl(user.getProfileImage())
                         .title(post.getTitle())
