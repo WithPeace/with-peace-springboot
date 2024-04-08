@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 
 @Entity
@@ -45,7 +46,7 @@ public class Post {
         this.title = title;
         this.content = content;
         this.type = type;
-        this.createDate = LocalDateTime.now();
+        this.createDate = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
     }
 
     public void setTitle(String title) { this.title = title; }
