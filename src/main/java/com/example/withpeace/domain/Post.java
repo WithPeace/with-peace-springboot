@@ -46,7 +46,7 @@ public class Post {
         this.title = title;
         this.content = content;
         this.type = type;
-        this.createDate = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
+        this.createDate = LocalDateTime.now();
     }
 
     public void setTitle(String title) { this.title = title; }
