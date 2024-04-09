@@ -8,6 +8,7 @@ import com.example.withpeace.domain.Image;
 import com.example.withpeace.domain.User;
 import com.example.withpeace.domain.Post;
 import com.example.withpeace.dto.request.PostRegisterRequestDto;
+import com.example.withpeace.dto.response.CommentListResponseDto;
 import com.example.withpeace.dto.response.PostDetailResponseDto;
 import com.example.withpeace.dto.response.PostListResponseDto;
 import com.example.withpeace.exception.CommonException;
@@ -102,6 +103,18 @@ public class PostService {
 
         List<String> postImageUrls = Optional.ofNullable(imageRepository.findUrlsByPost(post))
                 .orElse(Collections.emptyList());
+        List<CommentListResponseDto> comments = Optional.ofNullable(commentRepository.findCommentsByPost(post))
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(comment -> CommentListResponseDto.builder()
+                        .commentId(comment.getId())
+                        .userId(comment.getWriter().getId())
+                        .nickname(comment.getWriter().getNickname())
+                        .profileImageUrl(comment.getWriter().getProfileImage())
+                        .content(comment.getContent())
+                        .createDate(TimeFormatter.timeFormat(comment.getCreateDate()))
+                        .build())
+                .collect(Collectors.toList());
 
         PostDetailResponseDto postDetailResponseDto =
                 PostDetailResponseDto.builder()
@@ -114,6 +127,7 @@ public class PostService {
                         .type(post.getType())
                         .createDate(TimeFormatter.timeFormat(post.getCreateDate()))
                         .postImageUrls(postImageUrls)
+                        .comments(comments)
                         .build();
 
         return postDetailResponseDto;

@@ -15,5 +15,6 @@ public record PostDetailResponseDto(
         String content,
         ETopic type,
         String createDate,
-        List<String> postImageUrls) {
+        List<String> postImageUrls,
+        List<CommentListResponseDto> comments) {
 }
