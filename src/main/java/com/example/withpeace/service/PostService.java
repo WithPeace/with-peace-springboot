@@ -3,6 +3,7 @@ package com.example.withpeace.service;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.example.withpeace.domain.Comment;
 import com.example.withpeace.domain.Image;
 import com.example.withpeace.domain.User;
 import com.example.withpeace.domain.Post;
@@ -11,6 +12,7 @@ import com.example.withpeace.dto.response.PostDetailResponseDto;
 import com.example.withpeace.dto.response.PostListResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
+import com.example.withpeace.repository.CommentRepository;
 import com.example.withpeace.repository.ImageRepository;
 import com.example.withpeace.repository.PostRepository;
 import com.example.withpeace.repository.UserRepository;
@@ -37,6 +39,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
+    private final CommentRepository commentRepository;
     private final AmazonS3 amazonS3;
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -194,6 +197,22 @@ public class PostService {
         // 해당 경로로 시작하는 모든 객체를 삭제 대상에 추가함
         deleteObjectsRequest.withKeys("postImage/" + post.getId());
         amazonS3.deleteObjects(deleteObjectsRequest);
+    }
+
+    @Transactional
+    public Long registerComment(Long userId, Long postId, String content) {
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        Post post =
+                postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
+
+        Comment comment = commentRepository.saveAndFlush(Comment.builder()
+                .post(post)
+                .writer(user)
+                .content(content)
+                .build());
+
+        return comment.getId();
     }
 
 }

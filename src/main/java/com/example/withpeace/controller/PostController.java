@@ -3,6 +3,7 @@ package com.example.withpeace.controller;
 import com.example.withpeace.annotation.UserId;
 import com.example.withpeace.dto.ResponseDto;
 import com.example.withpeace.dto.request.PostRegisterRequestDto;
+import com.example.withpeace.dto.response.CommentRegisterResponseDto;
 import com.example.withpeace.dto.response.PostDetailResponseDto;
 import com.example.withpeace.dto.response.PostRegisterResponseDto;
 import com.example.withpeace.service.PostService;
@@ -67,5 +68,13 @@ public class PostController {
     @DeleteMapping("/{postId}")
     public ResponseDto<?> deletePost(@UserId Long userId, @PathVariable Long postId) {
         return ResponseDto.ok(postService.deletePost(userId, postId));
+    }
+
+    // 댓글 생성
+    @PostMapping("/{postId}/comments/register")
+    public ResponseDto<CommentRegisterResponseDto> registerComment(@UserId Long userId, @PathVariable Long postId,
+                                                                   @RequestParam String content) {
+        Long commentId = postService.registerComment(userId, postId, content);
+        return ResponseDto.ok(new CommentRegisterResponseDto(commentId));
     }
 }
