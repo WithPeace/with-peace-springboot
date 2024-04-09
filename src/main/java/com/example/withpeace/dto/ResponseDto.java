@@ -25,16 +25,4 @@ public record ResponseDto<T>(@JsonIgnore HttpStatus httpStatus,
     public static ResponseDto<Object> fail(final CommonException e) {
         return new ResponseDto<>(e.getErrorCode().getHttpStatus(), null, new ExceptionDto(e.getErrorCode(), e.getMessage()));
     }
-
-    public static ResponseDto<Object> fail(final HandlerMethodValidationException e) {
-        return new ResponseDto<>(HttpStatus.BAD_REQUEST, null, new ExceptionDto(ErrorCode.INVALID_ARGUMENT, e.getMessage()));
-    }
-
-    public static ResponseDto<Object> fail(final MissingServletRequestParameterException e) {
-        return new ResponseDto<>(HttpStatus.BAD_REQUEST, null, new ExceptionDto(ErrorCode.INVALID_ARGUMENT, e.getMessage()));
-    }
-
-    public static ResponseDto<Object> fail(final MethodArgumentNotValidException e) {
-        return new ResponseDto<>(HttpStatus.BAD_REQUEST, null, new ExceptionDto(ErrorCode.INVALID_ARGUMENT, e.getMessage()));
-    }
 }

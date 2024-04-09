@@ -68,7 +68,7 @@ public class AuthService {
         user.setRefreshToken(jwtTokenDto.getRefreshToken());
         user.setLogin(true);
 
-        LoginResponseDto loginResponseDto = new LoginResponseDto(jwtTokenDto, user.getRole());
+        LoginResponseDto loginResponseDto = new LoginResponseDto(jwtTokenDto, user.getRole(), user.getId());
 
         return loginResponseDto;
     }
