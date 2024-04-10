@@ -89,7 +89,7 @@ public class AuthService {
     public JwtTokenDto refreshAccessToken(String refreshToken) {
         UserRepository.UserSecurityForm user =
                 userRepository.findByRefreshToken(refreshToken.substring(Constant.BEARER_PREFIX.length()))
-                        .orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+                        .orElseThrow(() -> new CommonException(ErrorCode.TOKEN_UNKNOWN_ERROR));
 
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getRole(), jwtUtil.getAccessTokenExpriration());
         return new JwtTokenDto(accessToken, refreshToken.substring(Constant.BEARER_PREFIX.length()));
