@@ -216,17 +216,17 @@ public class PostService {
     }
 
     @Transactional
-    public Long registerComment(Long userId, Long postId, String content) {
+    public Boolean registerComment(Long userId, Long postId, String content) {
         User user = getUserById(userId);
         Post post = getPostById(postId);
 
-        Comment comment = commentRepository.saveAndFlush(Comment.builder()
+        commentRepository.save(Comment.builder()
                 .post(post)
                 .writer(user)
                 .content(content)
                 .build());
 
-        return comment.getId();
+        return true;
     }
 
 }
