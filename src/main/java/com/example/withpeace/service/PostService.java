@@ -3,14 +3,17 @@ package com.example.withpeace.service;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.example.withpeace.domain.Comment;
 import com.example.withpeace.domain.Image;
 import com.example.withpeace.domain.User;
 import com.example.withpeace.domain.Post;
 import com.example.withpeace.dto.request.PostRegisterRequestDto;
+import com.example.withpeace.dto.response.CommentListResponseDto;
 import com.example.withpeace.dto.response.PostDetailResponseDto;
 import com.example.withpeace.dto.response.PostListResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
+import com.example.withpeace.repository.CommentRepository;
 import com.example.withpeace.repository.ImageRepository;
 import com.example.withpeace.repository.PostRepository;
 import com.example.withpeace.repository.UserRepository;
@@ -37,16 +40,24 @@ public class PostService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
+    private final CommentRepository commentRepository;
     private final AmazonS3 amazonS3;
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
     @Value("${cloud.aws.s3.static}")
     private String endpoint;
 
+    private User getUserById(Long userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+    }
+
+    private Post getPostById(Long postId) {
+        return postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
+    }
+
     @Transactional
     public Long registerPost(Long userId, PostRegisterRequestDto postRegisterRequestDto, List<MultipartFile> imageFiles) {
-        User user =
-                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        User user = getUserById(userId);
 
         Post post = postRepository.saveAndFlush(Post.builder()
                 .writer(user)
@@ -65,7 +76,7 @@ public class PostService {
 
     @Transactional
     private void uploadImages(Long postId, List<MultipartFile> imageFiles) {
-        Post post = postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
+        Post post = getPostById(postId);
 
         int idx = 0;
         for (MultipartFile file : imageFiles) {
@@ -76,7 +87,7 @@ public class PostService {
             String fileName = idx + "_" + file.getOriginalFilename();
             String fileUrl = endpoint + "/postImage/" + postId + "/" + fileName;
             try {
-                amazonS3.putObject(bucket, "postImage/" + postId + "/" + fileName, file.getInputStream(), metadata);
+                amazonS3.putObject(bucket, fileUrl.substring(endpoint.length() + 1), file.getInputStream(), metadata);
                 imageRepository.save(Image.builder()
                         .post(post)
                         .url(fileUrl)
@@ -92,13 +103,23 @@ public class PostService {
 
     @Transactional
     public PostDetailResponseDto getPostDetail(Long userId, Long postId) {
-        User user =
-                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
-        Post post =
-                postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
+        User user = getUserById(userId);
+        Post post = getPostById(postId);
 
         List<String> postImageUrls = Optional.ofNullable(imageRepository.findUrlsByPost(post))
                 .orElse(Collections.emptyList());
+        List<CommentListResponseDto> comments = Optional.ofNullable(commentRepository.findCommentsByPost(post))
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(comment -> CommentListResponseDto.builder()
+                        .commentId(comment.getId())
+                        .userId(comment.getWriter().getId())
+                        .nickname(comment.getWriter().getNickname())
+                        .profileImageUrl(comment.getWriter().getProfileImage())
+                        .content(comment.getContent())
+                        .createDate(TimeFormatter.timeFormat(comment.getCreateDate()))
+                        .build())
+                .collect(Collectors.toList());
 
         PostDetailResponseDto postDetailResponseDto =
                 PostDetailResponseDto.builder()
@@ -111,6 +132,7 @@ public class PostService {
                         .type(post.getType())
                         .createDate(TimeFormatter.timeFormat(post.getCreateDate()))
                         .postImageUrls(postImageUrls)
+                        .comments(comments)
                         .build();
 
         return postDetailResponseDto;
@@ -118,8 +140,7 @@ public class PostService {
 
     @Transactional
     public List<PostListResponseDto> getPostList(Long userId, ETopic type, Integer pageIndex, Integer pageSize) {
-        User user =
-                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        getUserById(userId);
 
         Pageable pageable = PageRequest.of(pageIndex, pageSize);
         Page<Post> postPage = postRepository.findByType(type, pageable);
@@ -137,9 +158,8 @@ public class PostService {
 
     @Transactional
     public Long updatePost(Long userId, Long postId, PostRegisterRequestDto postRegisterRequestDto, List<MultipartFile> imageFiles) {
-        userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
-        Post post =
-                postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
+        getUserById(userId);
+        Post post = getPostById(postId);
 
         Boolean isExistDbImage = imageRepository.existsByPost(post); // DB 이미지 존재 여부
 
@@ -167,9 +187,8 @@ public class PostService {
 
     @Transactional
     public Boolean deletePost(Long userId, Long postId) {
-        userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
-        Post post =
-                postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
+        getUserById(userId);
+        Post post = getPostById(postId);
 
         try {
             // DB, S3 이미지 삭제
@@ -194,6 +213,20 @@ public class PostService {
         // 해당 경로로 시작하는 모든 객체를 삭제 대상에 추가함
         deleteObjectsRequest.withKeys("postImage/" + post.getId());
         amazonS3.deleteObjects(deleteObjectsRequest);
+    }
+
+    @Transactional
+    public Boolean registerComment(Long userId, Long postId, String content) {
+        User user = getUserById(userId);
+        Post post = getPostById(postId);
+
+        commentRepository.save(Comment.builder()
+                .post(post)
+                .writer(user)
+                .content(content)
+                .build());
+
+        return true;
     }
 
 }
