@@ -68,4 +68,11 @@ public class PostController {
     public ResponseDto<?> deletePost(@UserId Long userId, @PathVariable Long postId) {
         return ResponseDto.ok(postService.deletePost(userId, postId));
     }
+
+    // 댓글 생성
+    @PostMapping("/{postId}/comments/register")
+    public ResponseDto<?> registerComment(@UserId Long userId, @PathVariable Long postId,
+                                          @RequestParam String content) {
+        return ResponseDto.ok(postService.registerComment(userId, postId, content));
+    }
 }
