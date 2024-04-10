@@ -87,7 +87,7 @@ public class PostService {
             String fileName = idx + "_" + file.getOriginalFilename();
             String fileUrl = endpoint + "/postImage/" + postId + "/" + fileName;
             try {
-                amazonS3.putObject(bucket, "postImage/" + postId + "/" + fileName, file.getInputStream(), metadata);
+                amazonS3.putObject(bucket, fileUrl.substring(endpoint.length() + 1), file.getInputStream(), metadata);
                 imageRepository.save(Image.builder()
                         .post(post)
                         .url(fileUrl)
