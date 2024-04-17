@@ -103,7 +103,7 @@ public class PostService {
 
     @Transactional
     public PostDetailResponseDto getPostDetail(Long userId, Long postId) {
-        User user = getUserById(userId);
+        getUserById(userId);
         Post post = getPostById(postId);
 
         List<String> postImageUrls = Optional.ofNullable(imageRepository.findUrlsByPost(post))
@@ -125,8 +125,8 @@ public class PostService {
                 PostDetailResponseDto.builder()
                         .postId(postId)
                         .userId(post.getWriter().getId())
-                        .nickname(user.getNickname())
-                        .profileImageUrl(user.getProfileImage())
+                        .nickname(post.getWriter().getNickname())
+                        .profileImageUrl(post.getWriter().getProfileImage())
                         .title(post.getTitle())
                         .content(post.getContent())
                         .type(post.getType())
