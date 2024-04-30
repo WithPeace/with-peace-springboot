@@ -35,6 +35,9 @@ public class Post {
     @Enumerated(EnumType.STRING)
     private ETopic type;
 
+    @Column(name = "comment_count", nullable = false)
+    private Long commentCount;
+
     @Column(name = "create_date", nullable = false)
     private LocalDateTime createDate;
 
@@ -44,11 +47,15 @@ public class Post {
         this.title = title;
         this.content = content;
         this.type = type;
+        this.commentCount = 0L;
         this.createDate = LocalDateTime.now();
     }
 
     public void setTitle(String title) { this.title = title; }
     public void setContent(String content) { this.content = content; }
     public void setType(ETopic type) { this.type = type; }
-    
+
+    public void increaseCommentCount() { this.commentCount++; }
+    public void decreaseCommentCount() { this.commentCount--; }
+
 }
