@@ -11,6 +11,7 @@ public record PostListResponseDto(
         String title,
         String content,
         ETopic type,
+        Long commentCount,
         String createDate,
         String postImageUrl) {
 
@@ -20,6 +21,7 @@ public record PostListResponseDto(
                 post.getTitle(),
                 post.getContent(),
                 post.getType(),
+                post.getCommentCount(),
                 TimeFormatter.timeFormat(post.getCreateDate()),
                 postImageUrl
         );

@@ -220,13 +220,19 @@ public class PostService {
         User user = getUserById(userId);
         Post post = getPostById(postId);
 
-        commentRepository.save(Comment.builder()
-                .post(post)
-                .writer(user)
-                .content(content)
-                .build());
+        try {
+            commentRepository.save(Comment.builder()
+                    .post(post)
+                    .writer(user)
+                    .content(content)
+                    .build());
+            post.increaseCommentCount();
 
-        return true;
+            return true;
+        } catch (Exception e) {
+            throw new CommonException(ErrorCode.POST_ERROR);
+        }
+
     }
 
 }
