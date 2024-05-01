@@ -2,6 +2,9 @@ package com.example.withpeace.exception;
 
 
 import com.example.withpeace.dto.ResponseDto;
+import com.example.withpeace.service.SlackService;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -17,7 +20,10 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 
 @Slf4j
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final SlackService slackService;
 
     @ExceptionHandler({HttpMediaTypeNotSupportedException.class, MultipartException.class})
     public ResponseDto<?> handleHttpMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException e) {
@@ -74,8 +80,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseDto<?> handleException(Exception e) {
+    public ResponseDto<?> handleException(Exception e, HttpServletRequest request) {
         log.error("Handler in Exception Error Message = " + e.getMessage(), e);
+        slackService.sendSlackAlertLog(e,request);
         return ResponseDto.fail(new CommonException(ErrorCode.SERVER_ERROR));
     }
 }

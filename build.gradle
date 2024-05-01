@@ -50,6 +50,9 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
 //    implementation group: 'org.springdoc', name: 'springdoc-openapi-ui', version: '1.7.0'
     implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    // slack webhook
+    implementation 'com.slack.api:slack-api-client:1.39.0'
+
 
 }
 
