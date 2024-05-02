@@ -2,8 +2,9 @@ package com.example.withpeace.controller;
 
 import com.example.withpeace.annotation.UserId;
 import com.example.withpeace.dto.ResponseDto;
-import com.example.withpeace.dto.request.CommentRequestDto;
+import com.example.withpeace.dto.request.CommentRegisterRequestDto;
 import com.example.withpeace.dto.request.PostRegisterRequestDto;
+import com.example.withpeace.dto.request.ReportRegisterRequestDto;
 import com.example.withpeace.dto.response.PostDetailResponseDto;
 import com.example.withpeace.dto.response.PostRegisterResponseDto;
 import com.example.withpeace.service.PostService;
@@ -70,10 +71,17 @@ public class PostController {
         return ResponseDto.ok(postService.deletePost(userId, postId));
     }
 
+    // 게시글 신고
+    @PostMapping("/{postId}/reports")
+    public ResponseDto<?> reportPost(@UserId Long userId, @PathVariable Long postId,
+                                     @Valid @RequestBody ReportRegisterRequestDto reason) {
+        return ResponseDto.ok(postService.reportPost(userId, postId, reason.reason()));
+    }
+
     // 댓글 생성
     @PostMapping("/{postId}/comments/register")
     public ResponseDto<?> registerComment(@UserId Long userId, @PathVariable Long postId,
-                                          @Valid @RequestBody CommentRequestDto content) {
+                                          @Valid @RequestBody CommentRegisterRequestDto content) {
         return ResponseDto.ok(postService.registerComment(userId, postId, content.content()));
     }
 }

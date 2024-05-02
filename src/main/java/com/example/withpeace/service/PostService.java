@@ -7,6 +7,7 @@ import com.example.withpeace.domain.Comment;
 import com.example.withpeace.domain.Image;
 import com.example.withpeace.domain.User;
 import com.example.withpeace.domain.Post;
+import com.example.withpeace.domain.Report;
 import com.example.withpeace.dto.request.PostRegisterRequestDto;
 import com.example.withpeace.dto.response.CommentListResponseDto;
 import com.example.withpeace.dto.response.PostDetailResponseDto;
@@ -17,6 +18,9 @@ import com.example.withpeace.repository.CommentRepository;
 import com.example.withpeace.repository.ImageRepository;
 import com.example.withpeace.repository.PostRepository;
 import com.example.withpeace.repository.UserRepository;
+import com.example.withpeace.repository.ReportRepository;
+import com.example.withpeace.type.EReason;
+import com.example.withpeace.type.EReportType;
 import com.example.withpeace.type.ETopic;
 import com.example.withpeace.util.TimeFormatter;
 import jakarta.transaction.Transactional;
@@ -41,6 +45,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final ImageRepository imageRepository;
     private final CommentRepository commentRepository;
+    private final ReportRepository reportRepository;
     private final AmazonS3 amazonS3;
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -213,6 +218,29 @@ public class PostService {
         // 해당 경로로 시작하는 모든 객체를 삭제 대상에 추가함
         deleteObjectsRequest.withKeys("postImage/" + post.getId());
         amazonS3.deleteObjects(deleteObjectsRequest);
+    }
+
+    @Transactional
+    public Boolean reportPost(Long userId, Long postId, EReason reason) {
+        User user = getUserById(userId);
+        Post post = getPostById(postId);
+
+        // 해당 게시글 중복 신고 확인
+        boolean alreadyReported = reportRepository.existsByWriterAndPostAndType(user, post, EReportType.POST);
+        if(alreadyReported) { throw new CommonException(ErrorCode.POST_ALREADY_REPORTED);}
+
+        try {
+            reportRepository.save(Report.builder()
+                    .writer(user)
+                    .post(post)
+                    .type(EReportType.POST)
+                    .reason(reason)
+                    .build());
+
+            return true;
+        } catch (Exception e) {
+            throw new CommonException(ErrorCode.POST_ERROR);
+        }
     }
 
     @Transactional
