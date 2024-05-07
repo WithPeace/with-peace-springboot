@@ -60,6 +60,10 @@ public class PostService {
         return postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
     }
 
+    private Comment getCommentById(Long commentId) {
+        return commentRepository.findById(commentId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_COMMENT));
+    }
+
     @Transactional
     public Long registerPost(Long userId, PostRegisterRequestDto postRegisterRequestDto, List<MultipartFile> imageFiles) {
         User user = getUserById(userId);
@@ -261,6 +265,29 @@ public class PostService {
             throw new CommonException(ErrorCode.POST_ERROR);
         }
 
+    }
+
+    @Transactional
+    public Boolean reportComment(Long userId, Long commentId, EReason reason) {
+        User user = getUserById(userId);
+        Comment comment = getCommentById(commentId);
+
+        // 해당 댓글 중복 신고 확인
+        boolean alreadyReported = reportRepository.existsByWriterAndCommentAndType(user, comment, EReportType.COMMENT);
+        if(alreadyReported) { throw new CommonException(ErrorCode.COMMENT_ALREADY_REPORTED);}
+
+        try {
+            reportRepository.save(Report.builder()
+                    .writer(user)
+                    .comment(comment)
+                    .type(EReportType.COMMENT)
+                    .reason(reason)
+                    .build());
+
+            return true;
+        } catch (Exception e) {
+            throw new CommonException(ErrorCode.POST_ERROR);
+        }
     }
 
 }
