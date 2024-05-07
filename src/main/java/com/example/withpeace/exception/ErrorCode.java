@@ -32,11 +32,13 @@ public enum ErrorCode {
 
     FILE_UPLOAD_ERROR(42201, HttpStatus.UNPROCESSABLE_ENTITY, "파일 업로드에 실패하였습니다."),
     POST_ALREADY_REPORTED(42202, HttpStatus.UNPROCESSABLE_ENTITY, "이미 신고한 게시글입니다."),
+    COMMENT_ALREADY_REPORTED(42203, HttpStatus.UNPROCESSABLE_ENTITY, "이미 신고한 댓글입니다."),
 
     ACCESS_DENIED_ERROR(40300, HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
     // Not Found Error
     NOT_FOUND_USER(40401, HttpStatus.NOT_FOUND, "해당 사용자가 존재하지 않습니다."),
     NOT_FOUND_POST(40402, HttpStatus.NOT_FOUND, "해당 게시글이 존재하지 않습니다."),
+    NOT_FOUND_COMMENT(40403, HttpStatus.NOT_FOUND, "해당 댓글이 존재하지 않습니다."),
 
     SERVER_ERROR(50000, HttpStatus.INTERNAL_SERVER_ERROR, "서버 에러 입니다."),
     AUTH_SERVER_USER_INFO_ERROR(50001, HttpStatus.INTERNAL_SERVER_ERROR, "인증 서버 사용자 정보 조회에 실패하였습니다."),

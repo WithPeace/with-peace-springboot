@@ -72,7 +72,7 @@ public class PostController {
     }
 
     // 게시글 신고
-    @PostMapping("/{postId}/reports")
+    @PostMapping("/{postId}/reportPost")
     public ResponseDto<?> reportPost(@UserId Long userId, @PathVariable Long postId,
                                      @Valid @RequestBody ReportRegisterRequestDto reason) {
         return ResponseDto.ok(postService.reportPost(userId, postId, reason.reason()));
@@ -83,5 +83,12 @@ public class PostController {
     public ResponseDto<?> registerComment(@UserId Long userId, @PathVariable Long postId,
                                           @Valid @RequestBody CommentRegisterRequestDto content) {
         return ResponseDto.ok(postService.registerComment(userId, postId, content.content()));
+    }
+
+    // 댓글 신고
+    @PostMapping("/{commentId}/reportComment")
+    public ResponseDto<?> reportComment(@UserId Long userId, @PathVariable Long commentId,
+                                     @Valid @RequestBody ReportRegisterRequestDto reason) {
+        return ResponseDto.ok(postService.reportComment(userId, commentId, reason.reason()));
     }
 }
