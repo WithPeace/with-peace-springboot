@@ -36,7 +36,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Transactional
     @Modifying
     @Query("DELETE FROM User u WHERE u.isDeleted = true and u.deleteDate < :cutoffDate")
-    void deleteUsersByDeleteDate(LocalDate cutoffDate);
+    Long deleteUsersByDeleteDate(LocalDate cutoffDate);
 
 
     interface UserSecurityForm {
