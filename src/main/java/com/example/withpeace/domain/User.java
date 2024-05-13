@@ -56,6 +56,9 @@ public class User {
     @Column(name = "is_deleted", columnDefinition = "TINYINT(1)", nullable = false)
     private Boolean isDeleted = false;
 
+    @Column(name = "delete_date")
+    private LocalDate deleteDate;
+
     /* User Info */
 
     @Column(name = "email")
@@ -100,7 +103,12 @@ public class User {
         this.profileImage = profileImage;
     }
 
+    public void setDeleteDate() {
+        this.deleteDate = LocalDate.now();
+    }
+
     public void recoveryUser(){
         this.isDeleted = false;
+        this.deleteDate = null;
     }
 }

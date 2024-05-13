@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Repository
@@ -30,6 +31,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u WHERE u.email = :email")
     Optional<User> findByEmail(String email);
+
+    // delete_date 가 14일이상 지난 유저들을 Hard delete 한다.
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM User u WHERE u.isDeleted = true and u.deleteDate < :cutoffDate")
+    void deleteUsersByDeleteDate(LocalDate cutoffDate);
 
 
     interface UserSecurityForm {

@@ -28,7 +28,7 @@ public class UserService {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
         userRepository.delete(user);
-
+        user.setDeleteDate();
         return Boolean.TRUE;
     }
 
