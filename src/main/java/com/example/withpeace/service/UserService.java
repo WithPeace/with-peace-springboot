@@ -32,6 +32,14 @@ public class UserService {
         return Boolean.TRUE;
     }
 
+    @Transactional
+    public Boolean recoveryUser(String email) {
+        User user =
+                userRepository.findByEmail(email).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        user.recoveryUser();
+        return Boolean.TRUE;
+    }
+
     public UserProfileResponseDto getUserProfile(Long userId) {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));

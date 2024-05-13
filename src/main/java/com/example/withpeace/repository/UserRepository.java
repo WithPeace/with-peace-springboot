@@ -22,11 +22,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Transactional
     @Modifying
-    @Query("UPDATE User u SET u.refreshToken = :refreshToken, u.isLogin = :status WHERE u.id = :id")
+    @Query("UPDATE User u SET u.refreshToken = :refreshToken, u.isLogin = :status WHERE u.id = :id AND u.isDeleted = false")
     void updateRefreshTokenAndLoginStatus(Long id, String refreshToken, boolean status);
 
-    @Query("SELECT u FROM User u WHERE u.socialId = :socialId AND u.eProvider = :loginProvider")
+    @Query("SELECT u FROM User u WHERE u.socialId = :socialId AND u.eProvider = :loginProvider AND u.isDeleted = false")
     Optional<User> findBySocialIdAndEProvider(String socialId, EProvider loginProvider);
+
+    @Query("SELECT u FROM User u WHERE u.email = :email")
+    Optional<User> findByEmail(String email);
 
 
     interface UserSecurityForm {
