@@ -9,6 +9,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDate;
 
@@ -17,6 +19,8 @@ import java.time.LocalDate;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @DynamicUpdate
+@SQLDelete(sql = "UPDATE users SET is_deleted = true WHERE id = ?")
+@SQLRestriction("is_deleted = false")
 @Table(name = "users")
 public class User {
     @Id
@@ -50,6 +54,9 @@ public class User {
 
     @Column(name = "profile_image")
     private String profileImage;
+
+    @Column(name = "is_deleted", columnDefinition = "TINYINT(1)", nullable = false)
+    private Boolean isDeleted = false;
 
     /* User Info */
 
