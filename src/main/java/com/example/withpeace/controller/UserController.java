@@ -40,7 +40,7 @@ public class UserController {
     }
 
     @PatchMapping("recovery")
-    public ResponseDto<?> recoveryUser(@RequestBody String email) {
+    public ResponseDto<?> recoveryUser(@RequestBody @Email String email) {
         return ResponseDto.ok(userService.recoveryUser(email));
     }
 
