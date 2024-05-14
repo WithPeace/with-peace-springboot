@@ -1,6 +1,7 @@
 package com.example.withpeace.controller;
 
 
+import com.amazonaws.Response;
 import com.example.withpeace.annotation.UserId;
 import com.example.withpeace.dto.ResponseDto;
 import com.example.withpeace.dto.request.NicknameRequestDto;
@@ -8,6 +9,7 @@ import com.example.withpeace.service.UserService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -35,6 +37,11 @@ public class UserController {
     @DeleteMapping("")
     public ResponseDto<?> withdrawalUser(@UserId Long userId) {
         return ResponseDto.ok(userService.withdrawalUser(userId));
+    }
+
+    @PatchMapping("recovery")
+    public ResponseDto<?> recoveryUser(@RequestBody @Email String email) {
+        return ResponseDto.ok(userService.recoveryUser(email));
     }
 
     @PutMapping(value = "profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

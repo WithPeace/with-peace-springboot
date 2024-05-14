@@ -28,7 +28,15 @@ public class UserService {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
         userRepository.delete(user);
+        user.setDeleteDate();
+        return Boolean.TRUE;
+    }
 
+    @Transactional
+    public Boolean recoveryUser(String email) {
+        User user =
+                userRepository.findByEmail(email).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        user.recoveryUser();
         return Boolean.TRUE;
     }
 
