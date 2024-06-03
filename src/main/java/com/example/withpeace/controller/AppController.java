@@ -21,3 +21,11 @@ public class AppController {
         return ResponseDto.ok(forceUpdate);
     }
 
+    // 안드로이드 강제 업데이트 버전 설정
+    @PostMapping("/setVersion/android")
+    public ResponseDto<?> setAndroidForceUpdateVersion(@UserId Long userId,
+                                                       @Valid @RequestBody int updateVersion) {
+        int updatedVersion = appService.setAndroidForceUpdateVersion(userId, updateVersion);
+        return ResponseDto.ok(updatedVersion);
+    }
+}

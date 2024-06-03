@@ -37,4 +37,25 @@ public class AppService {
         return currentVersion < androidForceUpdateVersion;
     }
 
+    @Transactional
+    public int setAndroidForceUpdateVersion(Long userId, int updateVersion) {
+        userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+
+        try {
+            // AppVersion 엔티티를 가져옵니다.
+            AppVersion appVersion = appVersionRepository.findFirstByOrderByIdAsc();
+            if (appVersion != null) {
+                // 기존 레코드의 버전 정보를 업데이트합니다.
+                appVersion.setAndroidForceUpdateVersion(updateVersion);
+                appVersionRepository.save(appVersion);
+                // 업데이트된 버전 정보를 androidForceUpdateVersion에 저장합니다.
+                androidForceUpdateVersion = updateVersion;
+            } else {
+                throw new CommonException(ErrorCode.NOT_FOUND_APP_VERSION);
+            }
+            return androidForceUpdateVersion;
+        } catch (Exception e) {
+            throw new CommonException(ErrorCode.SERVER_ERROR);
+        }
+    }
 }
