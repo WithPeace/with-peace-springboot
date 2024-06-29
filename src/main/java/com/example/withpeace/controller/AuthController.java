@@ -1,5 +1,6 @@
 package com.example.withpeace.controller;
 
+import com.auth0.jwk.JwkException;
 import com.example.withpeace.annotation.UserId;
 import com.example.withpeace.constant.Constant;
 import com.example.withpeace.dto.JwtTokenDto;
@@ -29,9 +30,17 @@ public class AuthController {
 
     //구글 로그인
     @PostMapping("/google")
-    public ResponseDto<LoginResponseDto> loginUsingGOOGLE(final HttpServletRequest request) throws IOException {
+    public ResponseDto<LoginResponseDto> loginUsingGOOGLE(final HttpServletRequest request) throws IOException, JwkException {
         final String accessToken = HeaderUtil.refineHeader(request, Constant.AUTHORIZATION_HEADER, Constant.BEARER_PREFIX).orElseThrow(() -> new CommonException(ErrorCode.SERVER_ERROR));
         final LoginResponseDto loginResponseDto = authService.loginForMobile(accessToken, EProvider.GOOGLE);
+        return ResponseDto.ok(loginResponseDto);
+    }
+
+    //애플 로그인
+    @PostMapping("/apple")
+    public ResponseDto<LoginResponseDto> loginUsingApple(final HttpServletRequest request) throws IOException, JwkException {
+        final String accessToken = HeaderUtil.refineHeader(request, Constant.AUTHORIZATION_HEADER, Constant.BEARER_PREFIX).orElseThrow(() -> new CommonException(ErrorCode.SERVER_ERROR));
+        final LoginResponseDto loginResponseDto = authService.loginForMobile(accessToken, EProvider.APPLE);
         return ResponseDto.ok(loginResponseDto);
     }
 

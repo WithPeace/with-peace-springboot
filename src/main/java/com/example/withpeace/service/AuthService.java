@@ -1,5 +1,6 @@
 package com.example.withpeace.service;
 
+import com.auth0.jwk.JwkException;
 import com.example.withpeace.constant.Constant;
 import com.example.withpeace.domain.User;
 import com.example.withpeace.dto.JwtTokenDto;
@@ -31,13 +32,16 @@ public class AuthService {
     private final OAuth2Util oAuth2Util;
 
     @Transactional
-    public LoginResponseDto loginForMobile(final String accessToken, final EProvider loginProvider) throws IOException {
+    public LoginResponseDto loginForMobile(final String accessToken, final EProvider loginProvider) throws IOException, JwkException {
         String socialId = null;
 
         switch (loginProvider) {
 
             case GOOGLE -> {
                 socialId = oAuth2Util.getGoogleUserIdToken(accessToken);
+            }
+            case APPLE -> {
+                socialId = oAuth2Util.getAppleUserIdToken(accessToken);
             }
             default -> {
                 throw new CommonException(ErrorCode.INVALID_PROVIDER);
