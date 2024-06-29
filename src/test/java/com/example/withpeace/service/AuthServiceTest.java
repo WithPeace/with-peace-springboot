@@ -1,5 +1,6 @@
 package com.example.withpeace.service;
 
+import com.auth0.jwk.JwkException;
 import com.example.withpeace.domain.User;
 import com.example.withpeace.dto.JwtTokenDto;
 import com.example.withpeace.dto.response.LoginResponseDto;
@@ -42,7 +43,7 @@ class AuthServiceTest {
 
     @Test
     @DisplayName("사용자 로그인 성공: 유효한 액세스 토큰과 사용자를 제공했을 때 로그인이 성공적으로 이루어지는지를 검증")
-    void loginForMobileSuccess() throws IOException {
+    void loginForMobileSuccess() throws IOException, JwkException {
         // Given
         String accessToken = "valid_accessToken";
         EProvider loginProvider = EProvider.GOOGLE;

@@ -28,6 +28,8 @@ dependencies {
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.0'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    implementation 'com.auth0:java-jwt:3.18.2'
+    implementation 'com.auth0:jwks-rsa:0.20.0'
 
     // Validation
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
@@ -52,8 +54,6 @@ dependencies {
     implementation 'javax.xml.bind:jaxb-api:2.3.1'
     // slack webhook
     implementation 'com.slack.api:slack-api-client:1.39.0'
-
-
 }
 
 tasks.named('test') {
