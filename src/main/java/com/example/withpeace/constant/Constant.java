@@ -15,6 +15,7 @@ public class Constant {
             "/api/v1/auth/refresh",
             "/api/v1/users/profile/nickname/check",
             "/api/v1/users/recovery",
+            "/api/v1/app/check/android",
             "/v3/api-docs",
             "/swagger-ui/index.html",
             "/swagger-ui/swagger-ui.css",

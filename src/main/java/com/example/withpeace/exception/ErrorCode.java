@@ -39,6 +39,7 @@ public enum ErrorCode {
     NOT_FOUND_USER(40401, HttpStatus.NOT_FOUND, "해당 사용자가 존재하지 않습니다."),
     NOT_FOUND_POST(40402, HttpStatus.NOT_FOUND, "해당 게시글이 존재하지 않습니다."),
     NOT_FOUND_COMMENT(40403, HttpStatus.NOT_FOUND, "해당 댓글이 존재하지 않습니다."),
+    NOT_FOUND_APP_VERSION(40404, HttpStatus.NOT_FOUND, "앱 버전 정보가 존재하지 않습니다."),
 
     SERVER_ERROR(50000, HttpStatus.INTERNAL_SERVER_ERROR, "서버 에러 입니다."),
     AUTH_SERVER_USER_INFO_ERROR(50001, HttpStatus.INTERNAL_SERVER_ERROR, "인증 서버 사용자 정보 조회에 실패하였습니다."),

@@ -200,7 +200,7 @@ public class PostService {
         Post post = getPostById(postId);
 
         try {
-            // DB, S3 이미지 삭제
+            // S3 이미지 삭제
             deleteImages(post);
 
             // 게시물 삭제
@@ -214,9 +214,6 @@ public class PostService {
 
     @Transactional
     private void deleteImages(Post post) {
-        // DB에서 image 삭제
-        imageRepository.deleteImagesByPost(post);
-
         // S3에서 image 삭제
         DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucket);
         // 해당 경로로 시작하는 모든 객체를 삭제 대상에 추가함
