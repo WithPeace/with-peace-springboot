@@ -1,22 +1,30 @@
 package com.example.withpeace.service;
 
 import com.example.withpeace.domain.YouthPolicy;
+import com.example.withpeace.dto.response.PolicyListResponseDto;
 import com.example.withpeace.dto.response.YouthPolicyListResponseDto;
 import com.example.withpeace.dto.response.YouthPolicyResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.YouthPolicyRepository;
+import com.example.withpeace.type.EPolicyClassification;
+import com.example.withpeace.type.EPolicyRegion;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +50,10 @@ public class YouthPolicyService {
             fetchAndSaveYouthPolicy();
 
             log.info("Youth Policy data update job completed. Total {} policies saved.", saveCount);
+        } catch (CommonException e) {
+            if (e.getErrorCode() == ErrorCode.YOUTH_POLICY_FETCH_AND_SAVE_ERROR
+                || e.getErrorCode() == ErrorCode.YOUTH_POLICY_DELETE_ERROR)
+                throw e;
         } catch (Exception e) {
             throw new CommonException(ErrorCode.YOUTH_POLICY_SCHEDULED_ERROR);
         }
@@ -118,6 +130,42 @@ public class YouthPolicyService {
             entities.add(entity);
         }
         return entities;
+    }
+
+    @Transactional
+    public List<PolicyListResponseDto> getPolicyList(String region, String classification, Integer pageIndex, Integer display) {
+        List<EPolicyRegion> regionList = null;
+        if (region != null) {
+            regionList = Arrays.stream(region.split(","))
+                    .map(EPolicyRegion::fromCode)
+                    .collect(Collectors.toList());
+        }
+
+        List<EPolicyClassification> classificationList = null;
+        if (classification != null) {
+            classificationList = Arrays.stream(classification.split(","))
+                    .map(EPolicyClassification::fromCode)
+                    .collect(Collectors.toList());
+        }
+
+        Pageable pageable = PageRequest.of(pageIndex, display);
+        Page<YouthPolicy> youthPolicyPage;
+
+        if (regionList != null && classificationList != null) {
+            youthPolicyPage = youthPolicyRepository.findByRegionInAndClassificationIn(regionList, classificationList, pageable);
+        } else if (regionList != null) {
+            youthPolicyPage = youthPolicyRepository.findByRegionIn(regionList, pageable);
+        } else if (classificationList != null) {
+            youthPolicyPage = youthPolicyRepository.findByClassificationIn(classificationList, pageable);
+        } else {
+            youthPolicyPage = youthPolicyRepository.findAll(pageable);
+        }
+
+        List<PolicyListResponseDto> policyListResponseDtos = youthPolicyPage.getContent().stream()
+                .map(PolicyListResponseDto::from)
+                .collect(Collectors.toList());
+
+        return policyListResponseDtos;
     }
 
 }
