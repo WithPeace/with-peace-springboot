@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface YouthPolicyRepository extends JpaRepository<YouthPolicy, Long> {
 
@@ -17,4 +18,5 @@ public interface YouthPolicyRepository extends JpaRepository<YouthPolicy, Long> 
 
     Page<YouthPolicy> findByClassificationIn(List<EPolicyClassification> classifications, Pageable pageable);
 
+    Optional<YouthPolicy> findById(String policyId);
 }

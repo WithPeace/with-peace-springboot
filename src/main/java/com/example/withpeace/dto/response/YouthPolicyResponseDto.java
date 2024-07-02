@@ -55,6 +55,22 @@ public record YouthPolicyResponseDto(
         String applicationSite,
 
         @JacksonXmlProperty(localName = "pstnPaprCn")
-        String submissionDocuments
+        String submissionDocuments,
+
+
+        @JacksonXmlProperty(localName = "etct")
+        String etc,
+
+        @JacksonXmlProperty(localName = "mngtMson")
+        String managingInstitution,
+
+        @JacksonXmlProperty(localName = "cnsgNmor")
+        String operatingOrganization,
+
+        @JacksonXmlProperty(localName = "rfcSiteUrla1")
+        String businessReferenceSite1,
+
+        @JacksonXmlProperty(localName = "rfcSiteUrla2")
+        String businessReferenceSite2
 ) {
 }

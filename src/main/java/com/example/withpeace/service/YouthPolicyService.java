@@ -1,6 +1,7 @@
 package com.example.withpeace.service;
 
 import com.example.withpeace.domain.YouthPolicy;
+import com.example.withpeace.dto.response.PolicyDetailResponseDto;
 import com.example.withpeace.dto.response.PolicyListResponseDto;
 import com.example.withpeace.dto.response.YouthPolicyListResponseDto;
 import com.example.withpeace.dto.response.YouthPolicyResponseDto;
@@ -37,6 +38,10 @@ public class YouthPolicyService {
     private int saveCount = 0;
 
     private final YouthPolicyRepository youthPolicyRepository;
+
+    private YouthPolicy getPolicyById(String policyId) {
+        return youthPolicyRepository.findById(policyId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_YOUTH_POLICY));
+    }
 
     @Scheduled(cron = "0 0 0 * * MON") // 매주 월요일 00:00에 실행되도록 설정
     @Transactional
@@ -166,6 +171,13 @@ public class YouthPolicyService {
                 .collect(Collectors.toList());
 
         return policyListResponseDtos;
+    }
+
+    @Transactional
+    public PolicyDetailResponseDto getPolicyDetail(String policyId) {
+        YouthPolicy policy = getPolicyById(policyId);
+
+        return PolicyDetailResponseDto.from(policy);
     }
 
 }

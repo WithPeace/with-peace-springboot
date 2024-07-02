@@ -70,28 +70,50 @@ public class YouthPolicy {
     @Column(name = "submission_documents")
     private String submissionDocuments; // 제출 서류 내용
 
+
+    @Column(name = "etc")
+    private String etc; // 기타 유익 정보
+
+    @Column(name = "managing_institution")
+    private String managingInstitution; // 주관 기관
+
+    @Column(name = "operating_organization")
+    private String operatingOrganization; // 운영 기관
+
+    @Column(name = "business_reference_site1")
+    private String businessReferenceSite1; // 사업관련 참고 사이트1
+
+    @Column(name = "business_reference_site2")
+    private String businessReferenceSite2; // 사업관련 참고 사이트2
+
     @Builder
     public YouthPolicy(String rnum, String id, String title, String introduce, String regionCode, String classificationCode,
                        String ageInfo, String applicationDetails, String residenceAndIncome, String education,
                        String specialization, String additionalNotes, String participationRestrictions,
                        String applicationProcess, String screeningAndAnnouncement, String applicationSite,
-                       String submissionDocuments) {
+                       String submissionDocuments, String etc, String managingInstitution, String operatingOrganization,
+                       String businessReferenceSite1, String businessReferenceSite2) {
         this.rnum = Long.parseLong(rnum);
         this.id = id;
         this.title = title;
-        this.introduce = introduce.equals("null") ? "-" : introduce;
+        this.introduce = introduce == null || introduce.equals("null") ? "-" : introduce;
         this.region = EPolicyRegion.fromCode(regionCode);
         this.classification = EPolicyClassification.fromCode(classificationCode);
-        this.ageInfo = ageInfo.equals("null") ? "-" : ageInfo;
-        this.applicationDetails = applicationDetails.equals("null") ? "-" : applicationDetails;
-        this.residenceAndIncome = residenceAndIncome.equals("null") ? "-" : residenceAndIncome;
-        this.education = education.equals("null") ? "-" : education;
-        this.specialization = specialization.equals("null") ? "-" : specialization;
-        this.additionalNotes = additionalNotes.equals("null") ? "-" : additionalNotes;
-        this.participationRestrictions = participationRestrictions.equals("null") ? "-" : participationRestrictions;
-        this.applicationProcess = applicationProcess.equals("null") ? "-" : applicationProcess;
-        this.screeningAndAnnouncement = screeningAndAnnouncement.equals("null") ? "-" : screeningAndAnnouncement;
-        this.applicationSite = applicationSite.equals("null") ? "-" : applicationSite;
-        this.submissionDocuments = submissionDocuments.equals("null") ? "-" : submissionDocuments;
+        this.ageInfo = ageInfo == null || ageInfo.equals("null") ? "-" : ageInfo;
+        this.applicationDetails = applicationDetails == null || applicationDetails.equals("null") ? "-" : applicationDetails;
+        this.residenceAndIncome = residenceAndIncome == null || residenceAndIncome.equals("null") ? "-" : residenceAndIncome;
+        this.education = education == null || education.equals("null") ? "-" : education;
+        this.specialization = specialization == null || specialization.equals("null") ? "-" : specialization;
+        this.additionalNotes = additionalNotes == null || additionalNotes.equals("null") ? "-" : additionalNotes;
+        this.participationRestrictions = participationRestrictions == null || participationRestrictions.equals("null") ? "-" : participationRestrictions;
+        this.applicationProcess = applicationProcess == null || applicationProcess.equals("null") ? "-" : applicationProcess;
+        this.screeningAndAnnouncement = screeningAndAnnouncement == null || screeningAndAnnouncement.equals("null") ? "-" : screeningAndAnnouncement;
+        this.applicationSite = applicationSite == null || applicationSite.equals("null") ? "-" : applicationSite;
+        this.submissionDocuments = submissionDocuments == null || submissionDocuments.equals("null") ? "-" : submissionDocuments;
+        this.etc = etc == null || etc.equals("null") ? "-" : etc;
+        this.managingInstitution = managingInstitution == null || managingInstitution.equals("null") ? "-" : managingInstitution;
+        this.operatingOrganization = operatingOrganization == null || operatingOrganization.equals("null") ? "-" : operatingOrganization;
+        this.businessReferenceSite1 = businessReferenceSite1 == null || businessReferenceSite1.equals("null") ? "-" : businessReferenceSite1;
+        this.businessReferenceSite2 = businessReferenceSite2 == null || businessReferenceSite2.equals("null") ? "-" : businessReferenceSite2;
     }
 }

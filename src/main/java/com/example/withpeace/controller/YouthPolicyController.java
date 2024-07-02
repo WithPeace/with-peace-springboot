@@ -43,4 +43,9 @@ public class YouthPolicyController {
         return ResponseDto.ok(policyList);
     }
 
+    // 정책 상세 조회
+    @GetMapping("/{policyId}")
+    public ResponseDto<?> getPolicyDetail(@PathVariable String policyId) {
+        return ResponseDto.ok(youthPolicyService.getPolicyDetail(policyId));
+    }
 }
