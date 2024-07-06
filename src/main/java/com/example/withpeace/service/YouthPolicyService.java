@@ -11,6 +11,7 @@ import com.example.withpeace.repository.YouthPolicyRepository;
 import com.example.withpeace.type.EPolicyClassification;
 import com.example.withpeace.type.EPolicyRegion;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -140,14 +141,14 @@ public class YouthPolicyService {
     @Transactional
     public List<PolicyListResponseDto> getPolicyList(String region, String classification, Integer pageIndex, Integer display) {
         List<EPolicyRegion> regionList = null;
-        if (region != null) {
+        if (StringUtils.isNotBlank(region)) { // null, 빈 문자열, 공백만 있는 문자열을 모두 처리
             regionList = Arrays.stream(region.split(","))
                     .map(EPolicyRegion::fromCode)
                     .collect(Collectors.toList());
         }
 
         List<EPolicyClassification> classificationList = null;
-        if (classification != null) {
+        if (StringUtils.isNotBlank(classification)) {
             classificationList = Arrays.stream(classification.split(","))
                     .map(EPolicyClassification::fromCode)
                     .collect(Collectors.toList());

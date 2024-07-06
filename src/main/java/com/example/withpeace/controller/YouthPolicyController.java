@@ -30,8 +30,8 @@ public class YouthPolicyController {
 
     // 정책 리스트 조회
     @GetMapping("")
-    public ResponseDto<?> getPolicyList(@RequestParam(required = false) String region,
-                                        @RequestParam(required = false) String classification,
+    public ResponseDto<?> getPolicyList(@RequestParam(defaultValue = "") String region,
+                                        @RequestParam(defaultValue = "") String classification,
                                         @RequestParam(defaultValue = "1") @Valid @NotNull @Min(1) Integer pageIndex,
                                         @RequestParam(defaultValue = "10") @Valid @NotNull @Min(10) Integer display) {
         List<PolicyListResponseDto> policyList = youthPolicyService.getPolicyList(
