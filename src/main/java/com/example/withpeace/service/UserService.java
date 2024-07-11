@@ -1,13 +1,14 @@
 package com.example.withpeace.service;
 
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.example.withpeace.domain.User;
 import com.example.withpeace.dto.response.UserProfileResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.UserRepository;
+import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Storage;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,11 +19,10 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
-    private final AmazonS3 amazonS3;
-    @Value("${cloud.aws.s3.bucket}")
-    private String bucket;
-    @Value("${cloud.aws.s3.static}")
-    private String endpoint;
+    private final Storage storage;
+
+    @Value("${spring.cloud.gcp.storage.bucket}")
+    private String bucketName;
 
     public Boolean withdrawalUser(Long userId) {
         User user =
@@ -102,21 +102,29 @@ public class UserService {
     @Transactional
     public void uploadProfileImage(Long userId, MultipartFile file, User user) {
         try {
-            String fileUrl = null;
+            String fileUrl;
+            String blobName;
             if (user.getProfileImage() != null && !user.getProfileImage().equals("default.png")) {
-                int index = endpoint.length() + 1;
-                int lastIndex = user.getProfileImage().lastIndexOf("/") + 1;
-                fileUrl = endpoint + "/" + user.getProfileImage().substring(index, lastIndex) + (Integer.parseInt(user.getProfileImage().substring(lastIndex)) + 1);
-                amazonS3.deleteObject(bucket, user.getProfileImage().substring(index));
-            } else {
-                fileUrl = endpoint + "/userProfile/" + userId + "/1";
-            }
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentType(file.getContentType());
-            metadata.setContentLength(file.getSize());
-            amazonS3.putObject(bucket, fileUrl.substring(endpoint.length() + 1), file.getInputStream(), metadata);
-            user.updateProfileImage(fileUrl);
+                String oldBlobName = user.getProfileImage().substring(user.getProfileImage().indexOf(bucketName) + bucketName.length() + 1);
+                storage.delete(BlobId.of(bucketName, oldBlobName));
 
+                int lastIndex = oldBlobName.lastIndexOf("/") + 1;
+                String folderPath = oldBlobName.substring(0, lastIndex);
+                int newIndex = Integer.parseInt(oldBlobName.substring(lastIndex)) + 1;
+                blobName = folderPath + newIndex;
+            } else {
+                blobName = "userProfile/" + userId + "/1";
+            }
+
+            fileUrl = "https://storage.googleapis.com/" + bucketName + "/" + blobName;
+
+            BlobId blobId = BlobId.of(bucketName, blobName);
+            BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                    .setContentType(file.getContentType())
+                    .build();
+            storage.create(blobInfo, file.getBytes());
+
+            user.updateProfileImage(fileUrl);
         } catch (Exception e) {
             throw new CommonException(ErrorCode.FILE_UPLOAD_ERROR);
         }
@@ -126,8 +134,8 @@ public class UserService {
     public String deleteProfileImage(Long userId) {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
-        int index = endpoint.length() + 1;
-        amazonS3.deleteObject(bucket, user.getProfileImage().substring(index));
+        String blobName = user.getProfileImage().substring(user.getProfileImage().indexOf(bucketName) + bucketName.length() + 1);
+        storage.delete(BlobId.of(bucketName, blobName));
         user.updateProfileImage("default.png");
         return user.getProfileImage();
     }
