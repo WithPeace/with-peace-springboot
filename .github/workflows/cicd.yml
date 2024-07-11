@@ -41,9 +41,9 @@ jobs:
       - name: Docker build & push to prod
         if: contains(github.ref, 'dev')
         run: |
-          docker login -u chanjin -p as199231!
-          docker build -t chanjin/withpeace .
-          docker push chanjin/withpeace
+          docker login -u withpeace -p withpeace0220
+          docker build -t withpeace/withpeace .
+          docker push withpeace/withpeace
 
       # Deploy to prod
       - name: Deploy to prod
@@ -51,17 +51,17 @@ jobs:
         id: deploy-prod
         if: contains(github.ref, 'dev')
         with:
-          host: 106.10.38.53
+          host: 34.47.82.92
           username: root
           password: withpeace!!
-          port: 2222
+          port: 22
           key: ${{ secrets.PRIVATE_KEY }}
           envs: GITHUB_SHA
           script: |
             sudo docker ps
             sudo docker stop springboot
             sudo docker rm -f springboot
-            sudo docker pull chanjin/withpeace
-            sudo docker run -d -p 8080:8080 --name springboot --network=net chanjin/withpeace
+            sudo docker pull withpeace/withpeace
+            sudo docker run -d -p 8080:8080 --name springboot --network=net withpeace/withpeace
             sudo docker image prune -f
 
