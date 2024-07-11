@@ -41,7 +41,7 @@ jobs:
       - name: Docker build & push to prod
         if: contains(github.ref, 'dev')
         run: |
-          docker login -u withpeace -p withpeace0220
+          docker login -u withpeace -p dckr_pat_h-hxmcBJbmLG5WbtzUuPSVp7ZN8
           docker build -t withpeace/withpeace .
           docker push withpeace/withpeace
 
