@@ -41,9 +41,9 @@ jobs:
       - name: Docker build & push to prod
         if: contains(github.ref, 'dev')
         run: |
-          docker login -u withpeace -p dckr_pat_h-hxmcBJbmLG5WbtzUuPSVp7ZN8
-          docker build -t withpeace/withpeace .
-          docker push withpeace/withpeace
+          docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_TOKEN}}
+          docker build -t ${{secrets.DOCKER_REPOSITORY}} .
+          docker push ${{secrets.DOCKER_REPOSITORY}}
 
       # Deploy to prod
       - name: Deploy to prod
@@ -51,9 +51,9 @@ jobs:
         id: deploy-prod
         if: contains(github.ref, 'dev')
         with:
-          host: 34.47.82.92
+          host: ${{secrets.HOST}}
           username: root
-          password: withpeace!!
+          password: ${{secrets.SSH_PASSWORD}}
           port: 22
           key: ${{ secrets.PRIVATE_KEY }}
           envs: GITHUB_SHA
@@ -61,7 +61,7 @@ jobs:
             sudo docker ps
             sudo docker stop springboot
             sudo docker rm -f springboot
-            sudo docker pull withpeace/withpeace
-            sudo docker run -d -p 8080:8080 --name springboot --network=net withpeace/withpeace
+            sudo docker pull ${{secrets.DOCKER_REPOSITORY}}
+            sudo docker run -d -p 8080:8080 --name springboot --network=net ${{secrets.DOCKER_REPOSITORY}}
             sudo docker image prune -f
 
