@@ -50,6 +50,15 @@ spring:
             redirect-uri: http://localhost:8080/login/oauth2/code/google
             scope:
               - email
+  # Google Cloud Storage
+  cloud:
+    gcp:
+      storage:
+        credentials:
+          location: classpath:with-peace-801b6-89c6377f475e.json
+        project-id: "with-peace-801b6"
+        bucket: "cheong-ha-bucket"
+
 client:
   provider:
     kakao:
@@ -61,19 +70,6 @@ client:
       token-uri: "https://oauth2.googleapis.com/token"
       user-info-uri: "https://www.googleapis.com/userinfo/v2/me"
 
-cloud:
-  aws:
-    credentials:
-      accessKey: 5xr2304ISFsqYXzVJGFl
-      secretKey: o9aJsLeo3UUNUeQWE7JmU3izM8I6rqzwOqQZCuK3
-    s3:
-      bucket: withpeace
-      endpoint: https://kr.object.ncloudstorage.com
-      static : http://withpeace.s3-website.kr.object.ncloudstorage.com
-    region:
-      static: ap-northeast-2
-    stack:
-      auto: false
 
 jwt.secret: uefrfjr8ew9jfejwr9ejf8w3h4j98fj8e94fhorg9hn3owth48hqf384ohtgfu34oqh8w9th438r2j3490rfj2
 slack.webhook.url: https://hooks.slack.com/services/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

@@ -1,8 +1,8 @@
 package com.example.withpeace.service;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.DeleteObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Storage;
 import com.example.withpeace.domain.Comment;
 import com.example.withpeace.domain.Image;
 import com.example.withpeace.domain.User;
@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -46,11 +47,10 @@ public class PostService {
     private final ImageRepository imageRepository;
     private final CommentRepository commentRepository;
     private final ReportRepository reportRepository;
-    private final AmazonS3 amazonS3;
-    @Value("${cloud.aws.s3.bucket}")
-    private String bucket;
-    @Value("${cloud.aws.s3.static}")
-    private String endpoint;
+    private final Storage storage;
+
+    @Value("${spring.cloud.gcp.storage.bucket}")
+    private String bucketName;
 
     private User getUserById(Long userId) {
         return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
@@ -89,14 +89,17 @@ public class PostService {
 
         int idx = 0;
         for (MultipartFile file : imageFiles) {
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentType(file.getContentType());
-            metadata.setContentLength(file.getSize());
-
             String fileName = idx + "_" + file.getOriginalFilename();
-            String fileUrl = endpoint + "/postImage/" + postId + "/" + fileName;
+            String blobName = "postImage/" + postId + "/" + fileName;
+            String fileUrl = "https://storage.googleapis.com/" + bucketName + "/" + blobName;
+
             try {
-                amazonS3.putObject(bucket, fileUrl.substring(endpoint.length() + 1), file.getInputStream(), metadata);
+                BlobId blobId = BlobId.of(bucketName, blobName);
+                BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                        .setContentType(file.getContentType())
+                        .build();
+                storage.create(blobInfo, file.getBytes());
+
                 imageRepository.save(Image.builder()
                         .post(post)
                         .url(fileUrl)
@@ -107,7 +110,6 @@ public class PostService {
 
             idx++;
         }
-
     }
 
     @Transactional
@@ -200,7 +202,7 @@ public class PostService {
         Post post = getPostById(postId);
 
         try {
-            // S3 이미지 삭제
+            // GCS 이미지 삭제
             deleteImages(post);
 
             // 게시물 삭제
@@ -214,11 +216,15 @@ public class PostService {
 
     @Transactional
     private void deleteImages(Post post) {
-        // S3에서 image 삭제
-        DeleteObjectsRequest deleteObjectsRequest = new DeleteObjectsRequest(bucket);
-        // 해당 경로로 시작하는 모든 객체를 삭제 대상에 추가함
-        deleteObjectsRequest.withKeys("postImage/" + post.getId());
-        amazonS3.deleteObjects(deleteObjectsRequest);
+        List<String> imageUrls = imageRepository.findUrlsByPost(post);
+        List<BlobId> blobIdsToDelete = new ArrayList<>();
+
+        for (String imageUrl : imageUrls) {
+            String blobName = imageUrl.substring(imageUrl.indexOf(bucketName) + bucketName.length() + 1);
+            blobIdsToDelete.add(BlobId.of(bucketName, blobName));
+        }
+
+        storage.delete(blobIdsToDelete);
     }
 
     @Transactional
