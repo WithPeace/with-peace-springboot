@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.SQLDelete;
 
 import java.time.LocalDate;
 
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @DynamicUpdate
+@SQLDelete(sql = "UPDATE users SET is_deleted = true WHERE id = ?")
 @Table(name = "users")
 public class User {
     @Id
@@ -51,30 +53,40 @@ public class User {
     @Column(name = "profile_image")
     private String profileImage;
 
+    @Column(name = "is_deleted", columnDefinition = "TINYINT(1)", nullable = false)
+    private Boolean isDeleted = false;
+
+    @Column(name = "delete_date")
+    private LocalDate deleteDate;
+
     /* User Info */
 
     @Column(name = "email")
     private String email;
 
-    @Column(name = "nickname")
+    @Column(name = "nickname", unique = true)
     private String nickname;
 
     @Builder
-    public User(String socialId, EProvider eProvider, ERole role) {
+    public User(String socialId, EProvider eProvider, ERole role, String email) {
         this.socialId = socialId;
         this.eProvider = eProvider;
         this.role = role;
         this.createDate = LocalDate.now();
         this.isLogin = false;
         this.profileImage = "default.png";
-    }
-
-    public void register(String email, String nickname, String deviceToken) {
         this.email = email;
-        this.nickname = nickname;
-        this.deviceToken = deviceToken;
     }
 
+    public void updateNickname(String nickname) {
+        if(nickname != this.nickname){
+            this.nickname = nickname;
+        }
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
+    }
     public void setRole(ERole role) {
         this.role = role;
     }
@@ -85,5 +97,18 @@ public class User {
 
     public void setRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
+    }
+
+    public void updateProfileImage(String profileImage) {
+        this.profileImage = profileImage;
+    }
+
+    public void setDeleteDate() {
+        this.deleteDate = LocalDate.now();
+    }
+
+    public void recoveryUser(){
+        this.isDeleted = false;
+        this.deleteDate = null;
     }
 }

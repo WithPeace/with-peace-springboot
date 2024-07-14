@@ -1,9 +1,11 @@
 package com.example.withpeace.service;
 
+import com.auth0.jwk.JwkException;
 import com.example.withpeace.constant.Constant;
 import com.example.withpeace.domain.User;
 import com.example.withpeace.dto.JwtTokenDto;
-import com.example.withpeace.dto.request.SocialRegisterDto;
+import com.example.withpeace.dto.request.SocialRegisterRequestDto;
+import com.example.withpeace.dto.response.LoginResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.UserRepository;
@@ -14,7 +16,9 @@ import com.example.withpeace.util.OAuth2Util;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Optional;
 
 @Service
@@ -22,17 +26,22 @@ import java.util.Optional;
 public class AuthService {
 
     private final UserRepository userRepository;
+
+    private final UserService userService;
     private final JwtUtil jwtUtil;
     private final OAuth2Util oAuth2Util;
 
     @Transactional
-    public JwtTokenDto loginForMobile(final String accessToken, final EProvider loginProvider) {
+    public LoginResponseDto loginForMobile(final String accessToken, final EProvider loginProvider) throws IOException, JwkException {
         String socialId = null;
 
         switch (loginProvider) {
 
             case GOOGLE -> {
-                socialId = oAuth2Util.getGoogleUserInformation(accessToken);
+                socialId = oAuth2Util.getGoogleUserIdToken(accessToken);
+            }
+            case APPLE -> {
+                socialId = oAuth2Util.getAppleUserIdToken(accessToken);
             }
             default -> {
                 throw new CommonException(ErrorCode.INVALID_PROVIDER);
@@ -52,6 +61,7 @@ public class AuthService {
                     .socialId(socialId)
                     .eProvider(loginProvider)
                     .role(ERole.GUEST)
+                    .email(oAuth2Util.getGoogleUserEmail(accessToken))
                     .build());
 
         } else {
@@ -62,17 +72,18 @@ public class AuthService {
         user.setRefreshToken(jwtTokenDto.getRefreshToken());
         user.setLogin(true);
 
-        return jwtTokenDto;
+        LoginResponseDto loginResponseDto = new LoginResponseDto(jwtTokenDto, user.getRole(), user.getId());
+
+        return loginResponseDto;
     }
 
     @Transactional
-    public JwtTokenDto register(Long userId, SocialRegisterDto socialRegisterDto) {
+    public JwtTokenDto register(Long userId, SocialRegisterRequestDto socialRegisterRequestDto, MultipartFile file) {
         User user = userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
 
-        user.register(socialRegisterDto.email(),socialRegisterDto.nickname(),socialRegisterDto.deviceToken());
+        userService.updateProfile(user, socialRegisterRequestDto.nickname(), file);
         user.setRole(ERole.USER);
         user.setLogin(true);
-
         final JwtTokenDto jwtTokenDto = jwtUtil.generateTokens(user.getId(), user.getRole());
         user.setRefreshToken(jwtTokenDto.getRefreshToken());
 
@@ -82,10 +93,10 @@ public class AuthService {
     public JwtTokenDto refreshAccessToken(String refreshToken) {
         UserRepository.UserSecurityForm user =
                 userRepository.findByRefreshToken(refreshToken.substring(Constant.BEARER_PREFIX.length()))
-                        .orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+                        .orElseThrow(() -> new CommonException(ErrorCode.TOKEN_UNKNOWN_ERROR));
 
         String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getRole(), jwtUtil.getAccessTokenExpriration());
-        return new JwtTokenDto(accessToken,refreshToken.substring(Constant.BEARER_PREFIX.length()));
+        return new JwtTokenDto(accessToken, refreshToken.substring(Constant.BEARER_PREFIX.length()));
     }
 
 }

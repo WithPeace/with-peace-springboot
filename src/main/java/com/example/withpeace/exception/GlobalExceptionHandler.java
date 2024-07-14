@@ -2,7 +2,11 @@ package com.example.withpeace.exception;
 
 
 import com.example.withpeace.dto.ResponseDto;
+import com.example.withpeace.service.SlackService;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -16,7 +20,10 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 
 @Slf4j
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final SlackService slackService;
 
     @ExceptionHandler({HttpMediaTypeNotSupportedException.class, MultipartException.class})
     public ResponseDto<?> handleHttpMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException e) {
@@ -39,7 +46,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseDto<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         log.error("Handler in MethodArgumentNotValidException Error Message = " + e.getMessage());
-        return ResponseDto.fail(e);
+        return ResponseDto.fail(new CommonException(ErrorCode.INVALID_ARGUMENT));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -60,6 +67,12 @@ public class GlobalExceptionHandler {
         return ResponseDto.fail(new CommonException(ErrorCode.MISSING_REQUEST_PARAMETER));
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseDto<?> handleDataIntegrityViolationException(DataIntegrityViolationException e) {
+        log.error("Handler in DataIntegrityViolationException Error Message = " + e.getMessage());
+        return ResponseDto.fail(new CommonException(ErrorCode.DUPLICATE_RESOURCE));
+    }
+
     @ExceptionHandler(CommonException.class)
     public ResponseDto<?> handleApiException(CommonException e) {
         log.error("Handler in CommonException Error Message = " + e.getMessage());
@@ -67,8 +80,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseDto<?> handleException(Exception e) {
+    public ResponseDto<?> handleException(Exception e, HttpServletRequest request) {
         log.error("Handler in Exception Error Message = " + e.getMessage(), e);
+        slackService.sendSlackAlertLog(e,request);
         return ResponseDto.fail(new CommonException(ErrorCode.SERVER_ERROR));
     }
 }

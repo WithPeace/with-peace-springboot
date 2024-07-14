@@ -1,4 +1,8 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
   web:
     resources:
       add-mappings: false
@@ -36,16 +40,38 @@ spring:
         order_updates: true
         format_sql: true
   # Security OAuth2 설정
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: "836722341563-tttjmd0bh8hf7ja01bpv73lq62knuqbk.apps.googleusercontent.com"
+            client-secret: "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"
+            redirect-uri: http://localhost:8080/login/oauth2/code/google
+            scope:
+              - email
+  # Google Cloud Storage
+  cloud:
+    gcp:
+      storage:
+        credentials:
+          location: classpath:with-peace-801b6-89c6377f475e.json
+        project-id: "with-peace-801b6"
+        bucket: "cheong-ha-bucket"
 
-cloud:
-    aws:
-      credentials:
-        access-key:
-        secret-key:
-      s3:
-        bucket:
-      region.static: ap-northeast-2
-      stack:
-        auto: false
+client:
+  provider:
+    kakao:
+      authorization-uri: https://kauth.kakao.com/oauth/authorize
+      token-uri: https://kauth.kakao.com/oauth/token
+      user-info-uri: https://kapi.kakao.com/v2/user/me
+    google:
+      authorization-uri: "https://accounts.google.com/o/oauth2/v2/auth"
+      token-uri: "https://oauth2.googleapis.com/token"
+      user-info-uri: "https://www.googleapis.com/userinfo/v2/me"
+
 
 jwt.secret: uefrfjr8ew9jfejwr9ejf8w3h4j98fj8e94fhorg9hn3owth48hqf384ohtgfu34oqh8w9th438r2j3490rfj2
+slack.webhook.url: https://hooks.slack.com/services/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
+
+youth-policy.api-key: 8209a6c285cde4d07010e0dd

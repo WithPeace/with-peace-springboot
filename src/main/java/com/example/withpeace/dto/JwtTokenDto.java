@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 
 @Getter
-public class JwtTokenDto extends SelfValidating<JwtTokenDto> {
+public class JwtTokenDto{
     @NotBlank
     private String accessToken;
 
@@ -14,6 +14,5 @@ public class JwtTokenDto extends SelfValidating<JwtTokenDto> {
     public JwtTokenDto(String accessToken, String refreshToken) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
-        this.validateSelf();
     }
 }

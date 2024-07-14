@@ -22,12 +22,15 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     // Communication
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 
     // JWT
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api:4.0.0'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    implementation 'com.auth0:java-jwt:3.18.2'
+    implementation 'com.auth0:jwks-rsa:0.20.0'
 
     // Validation
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
@@ -39,12 +42,23 @@ dependencies {
     //aws
     implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
 
+    // Google Cloud Storage (GCS)
+    implementation 'org.springframework.cloud:spring-cloud-gcp-starter:1.2.8.RELEASE'
+    implementation 'org.springframework.cloud:spring-cloud-gcp-storage:1.2.8.RELEASE'
+
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
     annotationProcessor 'org.projectlombok:lombok'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
+
+    // swagger - springdoc
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+//    implementation group: 'org.springdoc', name: 'springdoc-openapi-ui', version: '1.7.0'
+    implementation 'javax.xml.bind:jaxb-api:2.3.1'
+    // slack webhook
+    implementation 'com.slack.api:slack-api-client:1.39.0'
 }
 
 tasks.named('test') {

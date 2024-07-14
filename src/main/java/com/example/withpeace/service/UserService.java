@@ -1,46 +1,148 @@
 package com.example.withpeace.service;
 
 
-import com.example.withpeace.constant.Constant;
 import com.example.withpeace.domain.User;
-import com.example.withpeace.dto.JwtTokenDto;
-import com.example.withpeace.dto.ResponseDto;
-import com.example.withpeace.dto.request.SocialRegisterDto;
+import com.example.withpeace.dto.response.UserProfileResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.UserRepository;
-import com.example.withpeace.util.JwtUtil;
+import com.google.cloud.storage.BlobId;
+import com.google.cloud.storage.BlobInfo;
+import com.google.cloud.storage.Storage;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
-    private final JwtUtil jwtUtil;
+    private final Storage storage;
 
+    @Value("${spring.cloud.gcp.storage.bucket}")
+    private String bucketName;
 
-    @Transactional
-    public JwtTokenDto socialRegisterUser(Long userId, SocialRegisterDto socialRegisterDto) {
-        User user = userRepository.findById(userId).orElseThrow(
-                () -> new CommonException(ErrorCode.NOT_FOUND_USER));
-//        user.register(socialRegisterDto.nickname(), socialRegisterDto.phoneNumber());
-
-        final JwtTokenDto jwtTokenDto = jwtUtil.generateTokens(user.getId(), user.getRole());
-        user.setRefreshToken(jwtTokenDto.getRefreshToken());
-
-        return jwtTokenDto;
-    }
-
-    public ResponseDto<Boolean> withdrawalUser(Long userId) {
+    public Boolean withdrawalUser(Long userId) {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
         userRepository.delete(user);
-
-        return ResponseDto.ok(Boolean.TRUE);
+        user.setDeleteDate();
+        return Boolean.TRUE;
     }
 
+    @Transactional
+    public Boolean recoveryUser(String email) {
+        User user =
+                userRepository.findByEmail(email).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        user.recoveryUser();
+        return Boolean.TRUE;
+    }
+
+    public UserProfileResponseDto getUserProfile(Long userId) {
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        UserProfileResponseDto userProfileResponseDto =
+                UserProfileResponseDto.builder()
+                        .userId(user.getId())
+                        .profileImageUrl(user.getProfileImage())
+                        .email(user.getEmail())
+                        .nickname(user.getNickname())
+                        .build();
+
+        return userProfileResponseDto;
+    }
+
+    @Transactional
+    public UserProfileResponseDto updateProfile(Long userId, String nickname, MultipartFile file) {
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        user.updateNickname(nickname);
+        if (file != null) {
+            uploadProfileImage(userId, file, user);
+        }
+        UserProfileResponseDto userProfileResponseDto =
+                UserProfileResponseDto.builder()
+                        .userId(user.getId())
+                        .profileImageUrl(user.getProfileImage())
+                        .email(user.getEmail())
+                        .nickname(user.getNickname())
+                        .build();
+
+        return userProfileResponseDto;
+    }
+
+    @Transactional
+    public String updateProfile(User user, String nickname, MultipartFile file) {
+        user.updateNickname(nickname);
+        if (file != null) {
+            uploadProfileImage(user.getId(), file, user);
+        }
+        return user.getProfileImage();
+    }
+
+    @Transactional
+    public String updateNickname(Long userId, String nickname) {
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        user.updateNickname(nickname);
+        return user.getNickname();
+    }
+
+    @Transactional
+    public String updateProfileImage(Long userId, MultipartFile file) {
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        uploadProfileImage(userId, file, user);
+        // image url return
+        return user.getProfileImage();
+    }
+
+    @Transactional
+    public void uploadProfileImage(Long userId, MultipartFile file, User user) {
+        try {
+            String fileUrl;
+            String blobName;
+            if (user.getProfileImage() != null && !user.getProfileImage().equals("default.png")) {
+                String oldBlobName = user.getProfileImage().substring(user.getProfileImage().indexOf(bucketName) + bucketName.length() + 1);
+                storage.delete(BlobId.of(bucketName, oldBlobName));
+
+                int lastIndex = oldBlobName.lastIndexOf("/") + 1;
+                String folderPath = oldBlobName.substring(0, lastIndex);
+                int newIndex = Integer.parseInt(oldBlobName.substring(lastIndex)) + 1;
+                blobName = folderPath + newIndex;
+            } else {
+                blobName = "userProfile/" + userId + "/1";
+            }
+
+            fileUrl = "https://storage.googleapis.com/" + bucketName + "/" + blobName;
+
+            BlobId blobId = BlobId.of(bucketName, blobName);
+            BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
+                    .setContentType(file.getContentType())
+                    .build();
+            storage.create(blobInfo, file.getBytes());
+
+            user.updateProfileImage(fileUrl);
+        } catch (Exception e) {
+            throw new CommonException(ErrorCode.FILE_UPLOAD_ERROR);
+        }
+    }
+
+    @Transactional
+    public String deleteProfileImage(Long userId) {
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        String blobName = user.getProfileImage().substring(user.getProfileImage().indexOf(bucketName) + bucketName.length() + 1);
+        storage.delete(BlobId.of(bucketName, blobName));
+        user.updateProfileImage("default.png");
+        return user.getProfileImage();
+    }
+
+    public Boolean checkNickname(String nickname) {
+        return userRepository.existsByNickname(nickname);
+    }
 
 
 }
