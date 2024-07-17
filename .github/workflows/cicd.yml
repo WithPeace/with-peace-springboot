@@ -62,6 +62,6 @@ jobs:
             sudo docker stop springboot
             sudo docker rm -f springboot
             sudo docker pull ${{secrets.DOCKER_REPOSITORY}}
-            sudo docker run -d -p 8080:8080 --name springboot ${{secrets.DOCKER_REPOSITORY}}
+            sudo docker run -d -p 8080:8080 --net=host --name springboot ${{secrets.DOCKER_REPOSITORY}}
             sudo docker image prune -f
 
