@@ -40,11 +40,15 @@ public enum ErrorCode {
     NOT_FOUND_POST(40402, HttpStatus.NOT_FOUND, "해당 게시글이 존재하지 않습니다."),
     NOT_FOUND_COMMENT(40403, HttpStatus.NOT_FOUND, "해당 댓글이 존재하지 않습니다."),
     NOT_FOUND_APP_VERSION(40404, HttpStatus.NOT_FOUND, "앱 버전 정보가 존재하지 않습니다."),
+    NOT_FOUND_YOUTH_POLICY(40405, HttpStatus.NOT_FOUND, "해당 정책이 존재하지 않습니다."),
 
     SERVER_ERROR(50000, HttpStatus.INTERNAL_SERVER_ERROR, "서버 에러 입니다."),
     AUTH_SERVER_USER_INFO_ERROR(50001, HttpStatus.INTERNAL_SERVER_ERROR, "인증 서버 사용자 정보 조회에 실패하였습니다."),
-    POST_ERROR(50002, HttpStatus.INTERNAL_SERVER_ERROR, "서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    POST_ERROR(50002, HttpStatus.INTERNAL_SERVER_ERROR, "서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요."),
 
+    YOUTH_POLICY_SCHEDULED_ERROR( 50003, HttpStatus.INTERNAL_SERVER_ERROR, "청년 정책 데이터를 가져오는 중에 오류가 발생했습니다."),
+    YOUTH_POLICY_FETCH_AND_SAVE_ERROR(50004, HttpStatus.INTERNAL_SERVER_ERROR, "청년 정책 데이터를 저장하는 도중 오류가 발생했습니다."),
+    YOUTH_POLICY_DELETE_ERROR(50005, HttpStatus.INTERNAL_SERVER_ERROR, "청년 정책 데이터를 삭제하는 도중 오류가 발생했습니다.");
 
     private final Integer code;
     private final HttpStatus httpStatus;
