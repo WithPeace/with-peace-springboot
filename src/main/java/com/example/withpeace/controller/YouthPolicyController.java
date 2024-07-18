@@ -52,4 +52,11 @@ public class YouthPolicyController {
         youthPolicyService.favoritePolicy(userId, policyId);
         return ResponseDto.ok(true);
     }
+
+    // 내가 찜한 정책 조회
+    @GetMapping("/favorites")
+    public ResponseDto<?> getFavoritePolicy(@UserId Long userId) {
+        return ResponseDto.ok(youthPolicyService.getFavoritePolicy(userId));
+    }
+
 }

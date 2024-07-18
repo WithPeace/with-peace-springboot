@@ -9,4 +9,6 @@ import java.util.List;
 public interface FavoritePolicyRepository extends JpaRepository<FavoritePolicy, Long> {
 
     FavoritePolicy findByUserAndPolicyId(User user, String policyId);
+
+    List<FavoritePolicy> findByUserOrderByCreateDateDesc(User user);
 }

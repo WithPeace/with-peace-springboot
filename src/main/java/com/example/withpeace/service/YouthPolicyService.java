@@ -208,4 +208,37 @@ public class YouthPolicyService {
         }
     }
 
+    @Transactional
+    public List<FavoritePolicyListResponseDto> getFavoritePolicy(Long userId) {
+        User user = getUserById(userId);
+
+        try{
+            List<FavoritePolicy> favoritePolicies = favoritePolicyRepository.findByUserOrderByCreateDateDesc(user);
+            List<FavoritePolicyListResponseDto> favoritePolicyListResponseDtos = new ArrayList<>();
+
+            for(FavoritePolicy favoritePolicy : favoritePolicies) {
+                YouthPolicy policy = youthPolicyRepository.findById(favoritePolicy.getPolicyId()).orElse(null);
+                if(policy != null) {
+                    // 해당 정책이 존재하는 경우
+                    if(!favoritePolicy.isActive()) favoritePolicy.setIsActive(true);
+                    FavoritePolicyListResponseDto responseDto =
+                            FavoritePolicyListResponseDto.from(policy, favoritePolicy.isActive());
+                    favoritePolicyListResponseDtos.add(responseDto);
+                }
+                else { // 해당 정책이 존재하지 않는 경우
+                    if(favoritePolicy.isActive()) favoritePolicy.setIsActive(false);
+                    FavoritePolicyListResponseDto responseDto =
+                            FavoritePolicyListResponseDto.from(favoritePolicy);
+                    favoritePolicyListResponseDtos.add(responseDto);
+                }
+            }
+
+            return favoritePolicyListResponseDtos;
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new CommonException(ErrorCode.YOUTH_POLICY_ERROR);
+        }
+    }
+
 }
