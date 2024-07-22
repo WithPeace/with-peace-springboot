@@ -48,8 +48,8 @@ public class YouthPolicyController {
 
     // 정책 찜하기
     @PostMapping("/{policyId}/favorites")
-    public ResponseDto<?> favoritePolicy(@UserId Long userId, @PathVariable String policyId) {
-        youthPolicyService.favoritePolicy(userId, policyId);
+    public ResponseDto<?> registerFavoritePolicy(@UserId Long userId, @PathVariable String policyId) {
+        youthPolicyService.registerFavoritePolicy(userId, policyId);
         return ResponseDto.ok(true);
     }
 

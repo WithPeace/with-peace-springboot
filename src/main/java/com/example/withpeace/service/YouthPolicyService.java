@@ -189,7 +189,7 @@ public class YouthPolicyService {
     }
 
     @Transactional
-    public void favoritePolicy(Long userId, String policyId) {
+    public void registerFavoritePolicy(Long userId, String policyId) {
         User user = getUserById(userId);
         YouthPolicy policy = getPolicyById(policyId);
 
