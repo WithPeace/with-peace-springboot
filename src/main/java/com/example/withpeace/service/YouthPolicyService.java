@@ -1,12 +1,13 @@
 package com.example.withpeace.service;
 
+import com.example.withpeace.domain.FavoritePolicy;
+import com.example.withpeace.domain.User;
 import com.example.withpeace.domain.YouthPolicy;
-import com.example.withpeace.dto.response.PolicyDetailResponseDto;
-import com.example.withpeace.dto.response.PolicyListResponseDto;
-import com.example.withpeace.dto.response.YouthPolicyListResponseDto;
-import com.example.withpeace.dto.response.YouthPolicyResponseDto;
+import com.example.withpeace.dto.response.*;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
+import com.example.withpeace.repository.FavoritePolicyRepository;
+import com.example.withpeace.repository.UserRepository;
 import com.example.withpeace.repository.YouthPolicyRepository;
 import com.example.withpeace.type.EPolicyClassification;
 import com.example.withpeace.type.EPolicyRegion;
@@ -39,9 +40,15 @@ public class YouthPolicyService {
     private int saveCount = 0;
 
     private final YouthPolicyRepository youthPolicyRepository;
+    private final UserRepository userRepository;
+    private final FavoritePolicyRepository favoritePolicyRepository;
 
     private YouthPolicy getPolicyById(String policyId) {
         return youthPolicyRepository.findById(policyId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_YOUTH_POLICY));
+    }
+
+    private User getUserById(Long userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
     }
 
     @Scheduled(cron = "0 0 0 * * MON") // 매주 월요일 00:00에 실행되도록 설정
@@ -179,6 +186,59 @@ public class YouthPolicyService {
         YouthPolicy policy = getPolicyById(policyId);
 
         return PolicyDetailResponseDto.from(policy);
+    }
+
+    @Transactional
+    public void registerFavoritePolicy(Long userId, String policyId) {
+        User user = getUserById(userId);
+        YouthPolicy policy = getPolicyById(policyId);
+
+        try{
+            // 찜하기 되어있지 않은 경우 찜하기 처리 수행
+            FavoritePolicy favoritePolicy = favoritePolicyRepository.findByUserAndPolicyId(user, policyId);
+            if(favoritePolicy == null) {
+                favoritePolicyRepository.save(FavoritePolicy.builder()
+                        .policyId(policy.getId())
+                        .user(user)
+                        .title(policy.getTitle())
+                        .build());
+            }
+        } catch (Exception e) {
+            throw new CommonException(ErrorCode.YOUTH_POLICY_ERROR);
+        }
+    }
+
+    @Transactional
+    public List<FavoritePolicyListResponseDto> getFavoritePolicy(Long userId) {
+        User user = getUserById(userId);
+
+        try{
+            List<FavoritePolicy> favoritePolicies = favoritePolicyRepository.findByUserOrderByCreateDateDesc(user);
+            List<FavoritePolicyListResponseDto> favoritePolicyListResponseDtos = new ArrayList<>();
+
+            for(FavoritePolicy favoritePolicy : favoritePolicies) {
+                YouthPolicy policy = youthPolicyRepository.findById(favoritePolicy.getPolicyId()).orElse(null);
+                if(policy != null) {
+                    // 해당 정책이 존재하는 경우
+                    if(!favoritePolicy.isActive()) favoritePolicy.setIsActive(true);
+                    FavoritePolicyListResponseDto responseDto =
+                            FavoritePolicyListResponseDto.from(policy, favoritePolicy.isActive());
+                    favoritePolicyListResponseDtos.add(responseDto);
+                }
+                else { // 해당 정책이 존재하지 않는 경우
+                    if(favoritePolicy.isActive()) favoritePolicy.setIsActive(false);
+                    FavoritePolicyListResponseDto responseDto =
+                            FavoritePolicyListResponseDto.from(favoritePolicy);
+                    favoritePolicyListResponseDtos.add(responseDto);
+                }
+            }
+
+            return favoritePolicyListResponseDtos;
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new CommonException(ErrorCode.YOUTH_POLICY_ERROR);
+        }
     }
 
 }
