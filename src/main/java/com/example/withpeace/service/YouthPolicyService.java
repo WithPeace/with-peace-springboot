@@ -51,6 +51,10 @@ public class YouthPolicyService {
         return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
     }
 
+    private boolean isFavoritePolicy(User user, String policyId) {
+        return favoritePolicyRepository.existsByUserAndPolicyId(user, policyId);
+    }
+
     @Scheduled(cron = "0 0 0 * * MON") // 매주 월요일 00:00에 실행되도록 설정
     @Transactional
     public void scheduledFetchAndSaveYouthPolicy() {
@@ -178,7 +182,7 @@ public class YouthPolicyService {
 
         List<PolicyListResponseDto> policyListResponseDtos = youthPolicyPage.getContent().stream()
                 .map(policy -> {
-                    boolean isFavorite = favoritePolicyRepository.existsByUserAndPolicyId(user, policy.getId());
+                    boolean isFavorite = isFavoritePolicy(user, policy.getId());
                     return PolicyListResponseDto.from(policy, isFavorite);
                 })
                 .collect(Collectors.toList());
@@ -190,7 +194,7 @@ public class YouthPolicyService {
     public PolicyDetailResponseDto getPolicyDetail(Long userId, String policyId) {
         User user = getUserById(userId);
         YouthPolicy policy = getPolicyById(policyId);
-        boolean isFavorite = favoritePolicyRepository.existsByUserAndPolicyId(user, policy.getId());
+        boolean isFavorite = isFavoritePolicy(user, policy.getId());
 
         return PolicyDetailResponseDto.from(policy, isFavorite);
     }
@@ -199,11 +203,10 @@ public class YouthPolicyService {
     public void registerFavoritePolicy(Long userId, String policyId) {
         User user = getUserById(userId);
         YouthPolicy policy = getPolicyById(policyId);
-        FavoritePolicy favoritePolicy = favoritePolicyRepository.findByUserAndPolicyId(user, policyId);
 
         try{
             // 찜하기 되어있지 않은 경우 찜하기 처리 수행
-            if(favoritePolicy == null) {
+            if(!isFavoritePolicy(user, policyId)) {
                 favoritePolicyRepository.save(FavoritePolicy.builder()
                         .policyId(policy.getId())
                         .user(user)
