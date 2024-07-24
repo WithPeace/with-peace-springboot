@@ -55,7 +55,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/posts/register").hasAnyRole((ERole.USER.toString()),ERole.ADMIN.toString())
                         .requestMatchers("/api/v1/app/check/android").permitAll()
                         .requestMatchers("/api/v1/app/setForceUpdateVersion/android").hasAnyRole(ERole.ADMIN.toString())
-                        .requestMatchers("/api/v1/policies/**").permitAll()
                         .requestMatchers("/api/v1/policies/refresh").hasRole(ERole.ADMIN.toString())
                         .anyRequest().authenticated())
 

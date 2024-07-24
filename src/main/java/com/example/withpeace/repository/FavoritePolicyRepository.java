@@ -11,4 +11,6 @@ public interface FavoritePolicyRepository extends JpaRepository<FavoritePolicy, 
     FavoritePolicy findByUserAndPolicyId(User user, String policyId);
 
     List<FavoritePolicy> findByUserOrderByCreateDateDesc(User user);
+
+    boolean existsByUserAndPolicyId(User user, String policyId);
 }

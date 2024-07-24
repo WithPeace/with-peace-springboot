@@ -146,7 +146,9 @@ public class YouthPolicyService {
     }
 
     @Transactional
-    public List<PolicyListResponseDto> getPolicyList(String region, String classification, Integer pageIndex, Integer display) {
+    public List<PolicyListResponseDto> getPolicyList(Long userId, String region, String classification, Integer pageIndex, Integer display) {
+        User user = getUserById(userId);
+
         List<EPolicyRegion> regionList = null;
         if (StringUtils.isNotBlank(region)) { // null, 빈 문자열, 공백만 있는 문자열을 모두 처리
             regionList = Arrays.stream(region.split(","))
@@ -175,7 +177,10 @@ public class YouthPolicyService {
         }
 
         List<PolicyListResponseDto> policyListResponseDtos = youthPolicyPage.getContent().stream()
-                .map(PolicyListResponseDto::from)
+                .map(policy -> {
+                    boolean isFavorite = favoritePolicyRepository.existsByUserAndPolicyId(user, policy.getId());
+                    return PolicyListResponseDto.from(policy, isFavorite);
+                })
                 .collect(Collectors.toList());
 
         return policyListResponseDtos;
@@ -192,10 +197,10 @@ public class YouthPolicyService {
     public void registerFavoritePolicy(Long userId, String policyId) {
         User user = getUserById(userId);
         YouthPolicy policy = getPolicyById(policyId);
+        FavoritePolicy favoritePolicy = favoritePolicyRepository.findByUserAndPolicyId(user, policyId);
 
         try{
             // 찜하기 되어있지 않은 경우 찜하기 처리 수행
-            FavoritePolicy favoritePolicy = favoritePolicyRepository.findByUserAndPolicyId(user, policyId);
             if(favoritePolicy == null) {
                 favoritePolicyRepository.save(FavoritePolicy.builder()
                         .policyId(policy.getId())
