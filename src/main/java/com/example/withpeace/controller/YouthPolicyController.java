@@ -30,20 +30,21 @@ public class YouthPolicyController {
 
     // 정책 리스트 조회
     @GetMapping("")
-    public ResponseDto<?> getPolicyList(@RequestParam(defaultValue = "") String region,
+    public ResponseDto<?> getPolicyList(@UserId Long userId,
+                                        @RequestParam(defaultValue = "") String region,
                                         @RequestParam(defaultValue = "") String classification,
                                         @RequestParam(defaultValue = "1") @Valid @NotNull @Min(1) Integer pageIndex,
                                         @RequestParam(defaultValue = "10") @Valid @NotNull @Min(10) Integer display) {
         List<PolicyListResponseDto> policyList = youthPolicyService.getPolicyList(
-                region, classification, pageIndex - 1, display);
+                userId, region, classification, pageIndex - 1, display);
 
         return ResponseDto.ok(policyList);
     }
 
     // 정책 상세 조회
     @GetMapping("/{policyId}")
-    public ResponseDto<?> getPolicyDetail(@PathVariable String policyId) {
-        return ResponseDto.ok(youthPolicyService.getPolicyDetail(policyId));
+    public ResponseDto<?> getPolicyDetail(@UserId Long userId, @PathVariable String policyId) {
+        return ResponseDto.ok(youthPolicyService.getPolicyDetail(userId, policyId));
     }
 
     // 정책 찜하기
@@ -57,6 +58,13 @@ public class YouthPolicyController {
     @GetMapping("/favorites")
     public ResponseDto<?> getFavoritePolicy(@UserId Long userId) {
         return ResponseDto.ok(youthPolicyService.getFavoritePolicy(userId));
+    }
+
+    // 정책 찜하기 해제
+    @DeleteMapping("/{policyId}/favorites")
+    public  ResponseDto<?> deleteFavoritePolicy(@UserId Long userId, @PathVariable String policyId) {
+        youthPolicyService.deleteFavoritePolicy(userId, policyId);
+        return ResponseDto.ok(true);
     }
 
 }

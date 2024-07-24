@@ -51,6 +51,10 @@ public class YouthPolicyService {
         return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
     }
 
+    private boolean isFavoritePolicy(User user, String policyId) {
+        return favoritePolicyRepository.existsByUserAndPolicyId(user, policyId);
+    }
+
     @Scheduled(cron = "0 0 0 * * MON") // 매주 월요일 00:00에 실행되도록 설정
     @Transactional
     public void scheduledFetchAndSaveYouthPolicy() {
@@ -146,7 +150,9 @@ public class YouthPolicyService {
     }
 
     @Transactional
-    public List<PolicyListResponseDto> getPolicyList(String region, String classification, Integer pageIndex, Integer display) {
+    public List<PolicyListResponseDto> getPolicyList(Long userId, String region, String classification, Integer pageIndex, Integer display) {
+        User user = getUserById(userId);
+
         List<EPolicyRegion> regionList = null;
         if (StringUtils.isNotBlank(region)) { // null, 빈 문자열, 공백만 있는 문자열을 모두 처리
             regionList = Arrays.stream(region.split(","))
@@ -175,17 +181,22 @@ public class YouthPolicyService {
         }
 
         List<PolicyListResponseDto> policyListResponseDtos = youthPolicyPage.getContent().stream()
-                .map(PolicyListResponseDto::from)
+                .map(policy -> {
+                    boolean isFavorite = isFavoritePolicy(user, policy.getId());
+                    return PolicyListResponseDto.from(policy, isFavorite);
+                })
                 .collect(Collectors.toList());
 
         return policyListResponseDtos;
     }
 
     @Transactional
-    public PolicyDetailResponseDto getPolicyDetail(String policyId) {
+    public PolicyDetailResponseDto getPolicyDetail(Long userId, String policyId) {
+        User user = getUserById(userId);
         YouthPolicy policy = getPolicyById(policyId);
+        boolean isFavorite = isFavoritePolicy(user, policy.getId());
 
-        return PolicyDetailResponseDto.from(policy);
+        return PolicyDetailResponseDto.from(policy, isFavorite);
     }
 
     @Transactional
@@ -195,8 +206,7 @@ public class YouthPolicyService {
 
         try{
             // 찜하기 되어있지 않은 경우 찜하기 처리 수행
-            FavoritePolicy favoritePolicy = favoritePolicyRepository.findByUserAndPolicyId(user, policyId);
-            if(favoritePolicy == null) {
+            if(!isFavoritePolicy(user, policyId)) {
                 favoritePolicyRepository.save(FavoritePolicy.builder()
                         .policyId(policy.getId())
                         .user(user)
@@ -204,7 +214,7 @@ public class YouthPolicyService {
                         .build());
             }
         } catch (Exception e) {
-            throw new CommonException(ErrorCode.YOUTH_POLICY_ERROR);
+            throw new CommonException(ErrorCode.FAVORITE_YOUTH_POLICY_ERROR);
         }
     }
 
@@ -237,7 +247,21 @@ public class YouthPolicyService {
 
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw new CommonException(ErrorCode.YOUTH_POLICY_ERROR);
+            throw new CommonException(ErrorCode.FAVORITE_YOUTH_POLICY_ERROR);
+        }
+    }
+
+    @Transactional
+    public void deleteFavoritePolicy(Long userId, String policyId) {
+        User user = getUserById(userId);
+        FavoritePolicy favoritePolicy = favoritePolicyRepository.findByUserAndPolicyId(user, policyId);
+
+        try {
+            // 찜하기 해제가 되어있지 않은 경우 찜하기 해제 처리 수행
+            if(favoritePolicy != null)
+                favoritePolicyRepository.delete(favoritePolicy);
+        } catch (Exception e) {
+            throw new CommonException(ErrorCode.FAVORITE_YOUTH_POLICY_ERROR);
         }
     }
 

@@ -12,16 +12,18 @@ public record PolicyListResponseDto(
         String introduce,
         EPolicyClassification classification,
         EPolicyRegion region,
-        String ageInfo) {
+        String ageInfo,
+        boolean isFavorite) {
 
-    public static PolicyListResponseDto from(YouthPolicy policy) {
+    public static PolicyListResponseDto from(YouthPolicy policy, boolean isFavorite) {
         return new PolicyListResponseDto(
                 policy.getId(),
                 policy.getTitle(),
                 policy.getIntroduce(),
                 policy.getClassification(),
                 policy.getRegion(),
-                policy.getAgeInfo()
+                policy.getAgeInfo(),
+                isFavorite
         );
     }
 }
