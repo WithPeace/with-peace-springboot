@@ -59,4 +59,11 @@ public class YouthPolicyController {
         return ResponseDto.ok(youthPolicyService.getFavoritePolicy(userId));
     }
 
+    // 정책 찜하기 해제
+    @DeleteMapping("/{policyId}/favorites")
+    public  ResponseDto<?> deleteFavoritePolicy(@UserId Long userId, @PathVariable String policyId) {
+        youthPolicyService.deleteFavoritePolicy(userId, policyId);
+        return ResponseDto.ok(true);
+    }
+
 }

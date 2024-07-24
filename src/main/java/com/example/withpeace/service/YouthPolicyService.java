@@ -204,7 +204,7 @@ public class YouthPolicyService {
                         .build());
             }
         } catch (Exception e) {
-            throw new CommonException(ErrorCode.YOUTH_POLICY_ERROR);
+            throw new CommonException(ErrorCode.FAVORITE_YOUTH_POLICY_ERROR);
         }
     }
 
@@ -237,7 +237,21 @@ public class YouthPolicyService {
 
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw new CommonException(ErrorCode.YOUTH_POLICY_ERROR);
+            throw new CommonException(ErrorCode.FAVORITE_YOUTH_POLICY_ERROR);
+        }
+    }
+
+    @Transactional
+    public void deleteFavoritePolicy(Long userId, String policyId) {
+        User user = getUserById(userId);
+        FavoritePolicy favoritePolicy = favoritePolicyRepository.findByUserAndPolicyId(user, policyId);
+
+        try {
+            // 찜하기 해제가 되어있지 않은 경우 찜하기 해제 처리 수행
+            if(favoritePolicy != null)
+                favoritePolicyRepository.delete(favoritePolicy);
+        } catch (Exception e) {
+            throw new CommonException(ErrorCode.FAVORITE_YOUTH_POLICY_ERROR);
         }
     }
 
