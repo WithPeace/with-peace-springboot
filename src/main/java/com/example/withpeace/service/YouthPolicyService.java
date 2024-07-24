@@ -187,10 +187,12 @@ public class YouthPolicyService {
     }
 
     @Transactional
-    public PolicyDetailResponseDto getPolicyDetail(String policyId) {
+    public PolicyDetailResponseDto getPolicyDetail(Long userId, String policyId) {
+        User user = getUserById(userId);
         YouthPolicy policy = getPolicyById(policyId);
+        boolean isFavorite = favoritePolicyRepository.existsByUserAndPolicyId(user, policy.getId());
 
-        return PolicyDetailResponseDto.from(policy);
+        return PolicyDetailResponseDto.from(policy, isFavorite);
     }
 
     @Transactional

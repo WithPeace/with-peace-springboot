@@ -28,9 +28,11 @@ public record PolicyDetailResponseDto(
         String supervisingAuthority, // managingInstitution
         String operatingOrganization,
         String businessRelatedReferenceSite1, // businessReferenceSite1
-        String businessRelatedReferenceSite2 // businessReferenceSite2
+        String businessRelatedReferenceSite2, // businessReferenceSite2
+
+        boolean isFavorite
 ) {
-    public static PolicyDetailResponseDto from(YouthPolicy policy) {
+    public static PolicyDetailResponseDto from(YouthPolicy policy, boolean isFavorite) {
         return PolicyDetailResponseDto.builder()
                 .id(policy.getId())
                 .title(policy.getTitle())
@@ -52,6 +54,7 @@ public record PolicyDetailResponseDto(
                 .operatingOrganization(policy.getOperatingOrganization())
                 .businessRelatedReferenceSite1(policy.getBusinessReferenceSite1())
                 .businessRelatedReferenceSite2(policy.getBusinessReferenceSite2())
+                .isFavorite(isFavorite)
                 .build();
     }
 }
