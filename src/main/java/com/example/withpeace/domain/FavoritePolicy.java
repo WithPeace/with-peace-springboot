@@ -22,7 +22,7 @@ public class FavoritePolicy {
     @Column(name = "id", nullable = false, unique = true)
     private Long id;
 
-    @Column(name = "policy_id", nullable = false, unique = true)
+    @Column(name = "policy_id", nullable = false)
     private String policyId;
 
     @ManyToOne(fetch = FetchType.LAZY)
