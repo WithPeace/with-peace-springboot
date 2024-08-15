@@ -41,6 +41,9 @@ public class Post {
     @Column(name = "comment_count", nullable = false)
     private Long commentCount;
 
+    @Column(name = "view_count", nullable = false)
+    private int viewCount;
+
     @Column(name = "create_date", nullable = false)
     private LocalDateTime createDate;
 
@@ -60,5 +63,7 @@ public class Post {
 
     public void increaseCommentCount() { this.commentCount++; }
     public void decreaseCommentCount() { this.commentCount--; }
+
+    public void incrementViewCount() { this.viewCount++; }
 
 }
