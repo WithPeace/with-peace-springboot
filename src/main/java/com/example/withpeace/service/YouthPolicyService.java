@@ -2,12 +2,14 @@ package com.example.withpeace.service;
 
 import com.example.withpeace.domain.FavoritePolicy;
 import com.example.withpeace.domain.User;
+import com.example.withpeace.domain.ViewPolicy;
 import com.example.withpeace.domain.YouthPolicy;
 import com.example.withpeace.dto.response.*;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.FavoritePolicyRepository;
 import com.example.withpeace.repository.UserRepository;
+import com.example.withpeace.repository.ViewPolicyRepository;
 import com.example.withpeace.repository.YouthPolicyRepository;
 import com.example.withpeace.type.EPolicyClassification;
 import com.example.withpeace.type.EPolicyRegion;
@@ -42,6 +44,7 @@ public class YouthPolicyService {
     private final YouthPolicyRepository youthPolicyRepository;
     private final UserRepository userRepository;
     private final FavoritePolicyRepository favoritePolicyRepository;
+    private final ViewPolicyRepository viewPolicyRepository;
 
     private YouthPolicy getPolicyById(String policyId) {
         return youthPolicyRepository.findById(policyId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_YOUTH_POLICY));
@@ -195,6 +198,7 @@ public class YouthPolicyService {
         User user = getUserById(userId);
         YouthPolicy policy = getPolicyById(policyId);
         boolean isFavorite = isFavoritePolicy(user, policy.getId());
+        viewPolicyRepository.incrementViewCount(policyId);
 
         return PolicyDetailResponseDto.from(policy, isFavorite);
     }
