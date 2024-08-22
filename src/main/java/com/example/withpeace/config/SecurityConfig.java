@@ -45,19 +45,12 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement((sessionManagement) ->
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(requestMatcherRegistry -> requestMatcherRegistry
-                        .requestMatchers("/actuator/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/favicon.ico", "/configuration/**", "/swagger*/**", "/webjars/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
-                        .requestMatchers("api/v1/auth/**").permitAll()
-                        .requestMatchers("api/v1/users/profile/nickname/check").permitAll()
-                        .requestMatchers("api/v1/users/recovery").permitAll()
-                        .requestMatchers("api/v1/users/**").hasAnyRole((ERole.USER.toString()),ERole.ADMIN.toString())
-                        .requestMatchers("api/v1/admin/**").hasRole(ERole.ADMIN.toString())
-                        .requestMatchers("/api/v1/posts/register").hasAnyRole((ERole.USER.toString()),ERole.ADMIN.toString())
-                        .requestMatchers("/api/v1/app/check/android").permitAll()
-                        .requestMatchers("/api/v1/app/setForceUpdateVersion/android").hasAnyRole(ERole.ADMIN.toString())
-                        .requestMatchers("/api/v1/policies/refresh").hasRole(ERole.ADMIN.toString())
-                        .anyRequest().authenticated())
+                .authorizeHttpRequests(requestMatcherRegistry -> {
+                    requestMatcherRegistry.requestMatchers(Constant.PUBLIC_URLS).permitAll();
+                    requestMatcherRegistry.requestMatchers(Constant.USER_URLS).hasAnyRole(ERole.USER.toString(), ERole.ADMIN.toString());
+                    requestMatcherRegistry.requestMatchers(Constant.ADMIN_URLS).hasRole(ERole.ADMIN.toString());
+                    requestMatcherRegistry.anyRequest().authenticated();
+                    })
 
                 .logout(configurer ->
                         configurer
