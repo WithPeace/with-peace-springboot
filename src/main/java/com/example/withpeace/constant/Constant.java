@@ -25,6 +25,7 @@ public class Constant {
             "/swagger-ui/swagger-initializer.js",
             "/swagger-ui/swagger-ui-standalone-preset.js",
             "/swagger-ui/index.css",
-            "/favicon.ico"
+            "/favicon.ico",
+            "/actuator/prometheus"
     );
 }
