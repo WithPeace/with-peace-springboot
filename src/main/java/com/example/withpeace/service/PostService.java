@@ -146,6 +146,8 @@ public class PostService {
                         .comments(comments)
                         .build();
 
+        post.incrementViewCount();
+
         return postDetailResponseDto;
     }
 
