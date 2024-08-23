@@ -9,3 +9,8 @@ spring:
         dev : dev
         debug: debug
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

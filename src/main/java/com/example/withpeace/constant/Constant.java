@@ -25,6 +25,24 @@ public class Constant {
             "/swagger-ui/swagger-initializer.js",
             "/swagger-ui/swagger-ui-standalone-preset.js",
             "/swagger-ui/index.css",
-            "/favicon.ico"
+            "/favicon.ico",
+            "/actuator/prometheus"
     );
+
+    public static final String[] PUBLIC_URLS = {
+            "/actuator/**",
+            "/v3/api-docs/**", "/favicon.ico", "/configuration/**",
+            "/swagger*/**", "/webjars/**", "/swagger-ui.html", "/swagger-ui/**",
+            "api/v1/auth/**", "api/v1/users/profile/nickname/check",
+            "api/v1/users/recovery", "/api/v1/app/check/android"
+    };
+
+    public static final String[] USER_URLS = {
+            "api/v1/users/**", "/api/v1/posts/register"
+    };
+
+    public static final String[] ADMIN_URLS = {
+            "api/v1/admin/**", "/api/v1/app/setForceUpdateVersion/android",
+            "/api/v1/policies/refresh"
+    };
 }
