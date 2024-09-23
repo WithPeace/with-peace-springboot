@@ -1,6 +1,8 @@
 package com.example.withpeace.domain;
 
 
+import com.example.withpeace.type.EPolicyClassification;
+import com.example.withpeace.type.EPolicyRegion;
 import com.example.withpeace.type.EProvider;
 import com.example.withpeace.type.ERole;
 import jakarta.persistence.*;
@@ -12,6 +14,7 @@ import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.SQLDelete;
 
 import java.time.LocalDate;
+import java.util.List;
 
 
 @Entity
@@ -67,6 +70,18 @@ public class User {
     @Column(name = "nickname", unique = true)
     private String nickname;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_regions", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "region")
+    private List<EPolicyRegion> regions;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_classifications", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "classification")
+    private List<EPolicyClassification> classifications;
+
     @Builder
     public User(String socialId, EProvider eProvider, ERole role, String email) {
         this.socialId = socialId;
@@ -110,5 +125,13 @@ public class User {
     public void recoveryUser(){
         this.isDeleted = false;
         this.deleteDate = null;
+    }
+
+    public void setRegions(List<EPolicyRegion> regions) {
+        this.regions = regions;
+    }
+
+    public void setClassifications(List<EPolicyClassification> classifications) {
+        this.classifications = classifications;
     }
 }
