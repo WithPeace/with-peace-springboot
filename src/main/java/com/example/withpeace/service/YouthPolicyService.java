@@ -217,6 +217,13 @@ public class YouthPolicyService {
                         .user(user)
                         .title(policy.getTitle())
                         .build());
+
+                // 사용자 상호작용 데이터 생성
+                userInteractionRepository.save(UserInteraction.builder()
+                        .user(user)
+                        .policyId(policy.getId())
+                        .actionType(EActionType.FAVORITE)
+                        .build());
             }
         } catch (Exception e) {
             throw new CommonException(ErrorCode.FAVORITE_YOUTH_POLICY_ERROR);
