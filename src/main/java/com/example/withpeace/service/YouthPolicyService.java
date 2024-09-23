@@ -1,16 +1,11 @@
 package com.example.withpeace.service;
 
-import com.example.withpeace.domain.FavoritePolicy;
-import com.example.withpeace.domain.User;
-import com.example.withpeace.domain.ViewPolicy;
-import com.example.withpeace.domain.YouthPolicy;
+import com.example.withpeace.domain.*;
 import com.example.withpeace.dto.response.*;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
-import com.example.withpeace.repository.FavoritePolicyRepository;
-import com.example.withpeace.repository.UserRepository;
-import com.example.withpeace.repository.ViewPolicyRepository;
-import com.example.withpeace.repository.YouthPolicyRepository;
+import com.example.withpeace.repository.*;
+import com.example.withpeace.type.EActionType;
 import com.example.withpeace.type.EPolicyClassification;
 import com.example.withpeace.type.EPolicyRegion;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -45,6 +40,7 @@ public class YouthPolicyService {
     private final UserRepository userRepository;
     private final FavoritePolicyRepository favoritePolicyRepository;
     private final ViewPolicyRepository viewPolicyRepository;
+    private final UserInteractionRepository userInteractionRepository;
 
     private YouthPolicy getPolicyById(String policyId) {
         return youthPolicyRepository.findById(policyId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_YOUTH_POLICY));
@@ -199,6 +195,11 @@ public class YouthPolicyService {
         YouthPolicy policy = getPolicyById(policyId);
         boolean isFavorite = isFavoritePolicy(user, policy.getId());
         viewPolicyRepository.incrementViewCount(policyId);
+        userInteractionRepository.save(UserInteraction.builder() // 사용자 상호작용 데이터 생성
+                .user(user)
+                .policyId(policy.getId())
+                .actionType(EActionType.VIEW)
+                .build());
 
         return PolicyDetailResponseDto.from(policy, isFavorite);
     }
