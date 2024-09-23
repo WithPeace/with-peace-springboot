@@ -2,18 +2,27 @@ package com.example.withpeace.service;
 
 
 import com.example.withpeace.domain.User;
+import com.example.withpeace.dto.response.UserPolicyFilterResponseDto;
 import com.example.withpeace.dto.response.UserProfileResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.UserRepository;
+import com.example.withpeace.type.EPolicyClassification;
+import com.example.withpeace.type.EPolicyRegion;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+import io.micrometer.common.util.StringUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -144,5 +153,48 @@ public class UserService {
         return userRepository.existsByNickname(nickname);
     }
 
+    public Boolean updateRegionAndClassification(Long userId, String region, String classification) {
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+
+        updateAndGetRegionList(user, region);
+        updateAndGetClassificationList(user, classification);
+
+        return Boolean.TRUE;
+    }
+
+    @Transactional
+    // 지역 정보를 처리 & User의 region 필드를 업데이트 & 필터링에 사용할 지역 리스트를 반환
+    public List<EPolicyRegion> updateAndGetRegionList(User user, String region) {
+        List<EPolicyRegion> regionList = Collections.emptyList();
+
+        if (StringUtils.isNotBlank(region)) { // null, 빈 문자열, 공백만 있는 문자열을 모두 처리
+            regionList = Arrays.stream(region.split(","))
+                    .map(EPolicyRegion::fromCode)
+                    .collect(Collectors.toList());
+        }
+
+        user.setRegions(regionList); // 사용자 지역 정보 업데이트
+        userRepository.save(user); // User 테이블에 저장
+
+        return user.getRegions();
+    }
+
+    @Transactional
+    // 정책 분야 정보를 처리 & User의 classification 필드를 업데이트 & 필터링에 사용할 분야 리스트를 반환
+    public List<EPolicyClassification> updateAndGetClassificationList(User user, String classification) {
+        List<EPolicyClassification> classificationList = Collections.emptyList();
+
+        if(StringUtils.isNotBlank(classification)) {
+            classificationList = Arrays.stream(classification.split(","))
+                    .map(EPolicyClassification::fromCode)
+                    .collect(Collectors.toList());
+        }
+
+        user.setClassifications(classificationList); // 사용자 정책 분야 정보 업데이트
+        userRepository.save(user); // User 테이블에 저장
+
+        return user.getClassifications();
+    }
 
 }
