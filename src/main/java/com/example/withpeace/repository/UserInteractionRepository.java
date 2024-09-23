@@ -8,4 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface UserInteractionRepository extends JpaRepository<UserInteraction, Long> {
+    List<UserInteraction> findByUserOrderByActionTimeDesc(User user);
+
+    UserInteraction findByUserAndPolicyIdAndActionType(User user, String policyId, EActionType favorite);
 }
