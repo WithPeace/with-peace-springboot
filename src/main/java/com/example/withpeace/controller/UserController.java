@@ -72,4 +72,8 @@ public class UserController {
         return ResponseDto.ok(userService.updateRegionAndClassification(userId, region, classification));
     }
 
+    @GetMapping("profile/policy-filter")
+    public ResponseDto<?> getRegionAndClassification(@UserId Long userId) {
+        return ResponseDto.ok(userService.getRegionAndClassification(userId));
+    }
 }

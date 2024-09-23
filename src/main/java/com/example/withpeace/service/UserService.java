@@ -197,4 +197,11 @@ public class UserService {
         return user.getClassifications();
     }
 
+    public UserPolicyFilterResponseDto getRegionAndClassification(Long userId) {
+        User user =
+                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+
+        return UserPolicyFilterResponseDto.from(user);
+    }
+
 }
