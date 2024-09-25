@@ -360,7 +360,7 @@ public class YouthPolicyService {
         return policyWeights;
     }
 
-    private List<PolicyListResponseDto> getHotPolicyList(User user, List<EPolicyRegion> regionList,
+    public List<PolicyListResponseDto> getHotPolicyList(User user, List<EPolicyRegion> regionList,
                                                          List<EPolicyClassification> classificationList, int count) {
         List<YouthPolicy> hotPolicyList = youthPolicyRepository.findHotPolicies();
 
@@ -373,6 +373,19 @@ public class YouthPolicyService {
                     boolean isFavorite = isFavoritePolicy(user, policy.getId());
                     return PolicyListResponseDto.from(policy, isFavorite);
                 })
+                .collect(Collectors.toList());
+    }
+
+    public List<PolicyListResponseDto> getHotPolicyList(Long userId) {
+        User user = getUserById(userId);
+        List<YouthPolicy> hotPolicyList = youthPolicyRepository.findHotPolicies();
+
+        return hotPolicyList.stream()
+                .map(policy -> {
+                    boolean isFavorite = isFavoritePolicy(user, policy.getId());
+                    return PolicyListResponseDto.from(policy, isFavorite);
+                })
+                .limit(6)
                 .collect(Collectors.toList());
     }
 
