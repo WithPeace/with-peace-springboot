@@ -1,5 +1,6 @@
 package com.example.withpeace.service;
 
+import com.example.withpeace.dto.response.RecentPostResponseDto;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
@@ -293,6 +294,14 @@ public class PostService {
         } catch (Exception e) {
             throw new CommonException(ErrorCode.POST_ERROR);
         }
+    }
+
+    public List<RecentPostResponseDto> getRecentPostList(Long userId) {
+        List<Post> recentPostList = postRepository.findRecentPostsByType();
+
+        return recentPostList.stream()
+                .map(RecentPostResponseDto::from)
+                .collect(Collectors.toList());
     }
 
 }

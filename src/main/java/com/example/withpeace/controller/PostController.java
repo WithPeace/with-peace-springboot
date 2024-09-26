@@ -91,4 +91,10 @@ public class PostController {
                                      @Valid @RequestBody ReportRegisterRequestDto reason) {
         return ResponseDto.ok(postService.reportComment(userId, commentId, reason.reason()));
     }
+
+    // 자주보는 게시판 조회 (Post topic 별 최신글 하나씩 조회)
+    @GetMapping("/recents")
+    public ResponseDto<?> getRecentPostList(@UserId Long userId) {
+        return ResponseDto.ok(postService.getRecentPostList(userId));
+    }
 }
