@@ -65,5 +65,15 @@ public class UserController {
         return ResponseDto.ok(userService.deleteProfileImage(userId));
     }
 
+    @PatchMapping("profile/policy-filter")
+    public ResponseDto<?> updateRegionAndClassification(@UserId Long userId,
+                                                    @RequestParam(defaultValue = "") String region,
+                                                    @RequestParam(defaultValue = "") String classification) {
+        return ResponseDto.ok(userService.updateRegionAndClassification(userId, region, classification));
+    }
 
+    @GetMapping("profile/policy-filter")
+    public ResponseDto<?> getRegionAndClassification(@UserId Long userId) {
+        return ResponseDto.ok(userService.getRegionAndClassification(userId));
+    }
 }

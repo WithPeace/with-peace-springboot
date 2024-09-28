@@ -67,4 +67,19 @@ public class YouthPolicyController {
         return ResponseDto.ok(true);
     }
 
+    // 맞춤 정책 리스트 조회
+    @GetMapping("/recommendations")
+    public ResponseDto<?> getRecommendationPolicyList(@UserId Long userId,
+                                                      @RequestParam(defaultValue = "") String region,
+                                                      @RequestParam(defaultValue = "") String classification) {
+        List<PolicyListResponseDto> recommendationPolicyList = youthPolicyService.getRecommendationPolicyList(userId, region, classification);
+        return ResponseDto.ok(recommendationPolicyList);
+    }
+
+    // 핫한 정책 리스트 조회
+    @GetMapping("/hot")
+    public ResponseDto<?> getHotPolicyList(@UserId Long userId) {
+        List<PolicyListResponseDto> hotPolicyList = youthPolicyService.getHotPolicyList(userId);
+        return ResponseDto.ok(hotPolicyList);
+    }
 }

@@ -1,16 +1,11 @@
 package com.example.withpeace.service;
 
-import com.example.withpeace.domain.FavoritePolicy;
-import com.example.withpeace.domain.User;
-import com.example.withpeace.domain.ViewPolicy;
-import com.example.withpeace.domain.YouthPolicy;
+import com.example.withpeace.domain.*;
 import com.example.withpeace.dto.response.*;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
-import com.example.withpeace.repository.FavoritePolicyRepository;
-import com.example.withpeace.repository.UserRepository;
-import com.example.withpeace.repository.ViewPolicyRepository;
-import com.example.withpeace.repository.YouthPolicyRepository;
+import com.example.withpeace.repository.*;
+import com.example.withpeace.type.EActionType;
 import com.example.withpeace.type.EPolicyClassification;
 import com.example.withpeace.type.EPolicyRegion;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -26,10 +21,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +40,8 @@ public class YouthPolicyService {
     private final UserRepository userRepository;
     private final FavoritePolicyRepository favoritePolicyRepository;
     private final ViewPolicyRepository viewPolicyRepository;
+    private final UserInteractionRepository userInteractionRepository;
+    private final UserService userService;
 
     private YouthPolicy getPolicyById(String policyId) {
         return youthPolicyRepository.findById(policyId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_YOUTH_POLICY));
@@ -184,10 +181,7 @@ public class YouthPolicyService {
         }
 
         List<PolicyListResponseDto> policyListResponseDtos = youthPolicyPage.getContent().stream()
-                .map(policy -> {
-                    boolean isFavorite = isFavoritePolicy(user, policy.getId());
-                    return PolicyListResponseDto.from(policy, isFavorite);
-                })
+                .map(policy -> createPolicyListResponseDto(user, policy))
                 .collect(Collectors.toList());
 
         return policyListResponseDtos;
@@ -199,6 +193,11 @@ public class YouthPolicyService {
         YouthPolicy policy = getPolicyById(policyId);
         boolean isFavorite = isFavoritePolicy(user, policy.getId());
         viewPolicyRepository.incrementViewCount(policyId);
+        userInteractionRepository.save(UserInteraction.builder() // 사용자 상호작용 데이터 생성
+                .user(user)
+                .policyId(policy.getId())
+                .actionType(EActionType.VIEW)
+                .build());
 
         return PolicyDetailResponseDto.from(policy, isFavorite);
     }
@@ -215,6 +214,13 @@ public class YouthPolicyService {
                         .policyId(policy.getId())
                         .user(user)
                         .title(policy.getTitle())
+                        .build());
+
+                // 사용자 상호작용 데이터 생성
+                userInteractionRepository.save(UserInteraction.builder()
+                        .user(user)
+                        .policyId(policy.getId())
+                        .actionType(EActionType.FAVORITE)
                         .build());
             }
         } catch (Exception e) {
@@ -262,11 +268,117 @@ public class YouthPolicyService {
 
         try {
             // 찜하기 해제가 되어있지 않은 경우 찜하기 해제 처리 수행
-            if(favoritePolicy != null)
+            if(favoritePolicy != null) {
                 favoritePolicyRepository.delete(favoritePolicy);
+
+                UserInteraction interaction =
+                        userInteractionRepository.findByUserAndPolicyIdAndActionType(user, policyId, EActionType.FAVORITE);
+                if (interaction != null) userInteractionRepository.delete(interaction); // 찜하기 상호작용 데이터 삭제
+            }
         } catch (Exception e) {
             throw new CommonException(ErrorCode.FAVORITE_YOUTH_POLICY_ERROR);
         }
+    }
+
+    @Transactional
+    public List<PolicyListResponseDto> getRecommendationPolicyList(Long userId, String region, String classification) {
+        User user = getUserById(userId);
+        List<PolicyListResponseDto> recommendationList = new ArrayList<>();
+
+        List<EPolicyRegion> regionList = userService.updateAndGetRegionList(user, region); // 지역 필터링 리스트
+        List<EPolicyClassification> classificationList = userService.updateAndGetClassificationList(user, classification); // 정책분야 필터링 리스트
+        Map<String, Integer> policyWeights = calculateInteractionWeight(user); // 사용자별 가중치 계산
+
+        if(!policyWeights.isEmpty()) { // 상호작용 데이터가 있는 경우
+            // 가중치 높은 순으로 정렬 & 지역 필터링 적용 & 상위 6개의 정책 가져오기
+            recommendationList =  policyWeights.entrySet().stream()
+                    .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()) // 가중치 내림차순
+                    .map(entry -> youthPolicyRepository.findById(entry.getKey())
+                            .filter(policy -> applyRegionAndClassificationFilter(policy, regionList, classificationList)) // 지역 & 정책분야 필터링 적용
+                            .map(policy -> createPolicyListResponseDto(user, policy)) // 필터링된 정책으로 PolicyListResponseDto 생성
+                            .orElse(null)) // 정책 없으면 null 반환
+                    .filter(Objects::nonNull) // null값 제거 (유효하지 않은 정책 필터링)
+                    .limit(6) // 상위 6개 정책 선택
+                    .collect(Collectors.toList());
+        }
+
+        // 정책이 6개 미만일 경우 "핫한 정책"으로 부족한 갯수를 채움
+        if(recommendationList.size() < 6) {
+            // recommendationList에 이미 포함된 정책 ID들을 추출
+            Set<String> existingPolicyIds = recommendationList.stream()
+                    .map(PolicyListResponseDto::id)
+                    .collect(Collectors.toSet());
+
+            // "핫한 정책" 리스트에서 기존에 포함된 정책을 제외한 정책들만 가져옴
+            List<PolicyListResponseDto> hotPolicyList = getHotPolicyList(user, regionList, classificationList, 12).stream()
+                    .filter(policy -> !existingPolicyIds.contains(policy.id())) // 기존 정책과 중복되지 않는 것만 선택
+                    .collect(Collectors.toList());
+
+            // 두 리스트를 합친 후, 6개의 정책을 반환
+            recommendationList = Stream.concat(recommendationList.stream(), hotPolicyList.stream())
+                    .limit(6)
+                    .collect(Collectors.toList());
+        }
+
+        return recommendationList;
+    }
+
+    private boolean applyRegionAndClassificationFilter(YouthPolicy policy, List<EPolicyRegion> regionList, List<EPolicyClassification> classificationList) {
+        // 정책이 지역 및 정책분야 필터 조건을 만족하는지 확인
+        return (regionList.isEmpty() || regionList.contains(policy.getRegion()))
+                && (classificationList.isEmpty() || classificationList.contains(policy.getClassification()));
+    }
+
+    private PolicyListResponseDto createPolicyListResponseDto(User user, YouthPolicy policy) {
+        boolean isFavorite = isFavoritePolicy(user, policy.getId()); // 찜하기 여부
+        return PolicyListResponseDto.from(policy, isFavorite);
+    }
+
+    private Map<String, Integer> calculateInteractionWeight(User user) {
+        List<UserInteraction> interactions = userInteractionRepository.findByUserOrderByActionTimeDesc(user);
+        Map<String, Integer> policyWeights = new HashMap<>(); // 정책별 가중치 저장
+
+        for(UserInteraction interaction : interactions) {
+            String policyId = interaction.getPolicyId();
+            EActionType actionType = interaction.getActionType();
+            LocalDateTime actionTime = interaction.getActionTime();
+
+            int weight = policyWeights.getOrDefault(policyId, 0); // 누적된 가중치 가져옴
+            if(actionType == EActionType.VIEW) { // 조회
+                weight += 1;
+            } else if(actionType == EActionType.FAVORITE) { // 찜하기
+                weight += 3;
+            }
+            // 최근 상호작용에 대한 가중치 1 추가 (최근 1주 이내)
+            if(actionTime.isAfter(LocalDateTime.now().minusWeeks(1))) {
+                weight += 1;
+            }
+            
+            policyWeights.put(policyId, weight); // 정책별 가중치 정보 갱신
+        }
+
+        return policyWeights;
+    }
+
+    public List<PolicyListResponseDto> getHotPolicyList(User user, List<EPolicyRegion> regionList,
+                                                         List<EPolicyClassification> classificationList, int count) {
+        List<YouthPolicy> hotPolicyList = youthPolicyRepository.findHotPolicies();
+
+        return hotPolicyList.stream()
+                .filter(policy -> applyRegionAndClassificationFilter(policy, regionList, classificationList)) // 지역 & 정책분야 필터링 적용
+                .limit(count) // 필요한 정책 수만큼 가져옴
+                .map(policy -> createPolicyListResponseDto(user, policy))
+                .collect(Collectors.toList());
+    }
+
+    public List<PolicyListResponseDto> getHotPolicyList(Long userId) {
+        User user = getUserById(userId);
+        List<YouthPolicy> hotPolicyList = youthPolicyRepository.findHotPolicies();
+
+        return hotPolicyList.stream()
+                .map(policy -> createPolicyListResponseDto(user, policy))
+                .limit(6)
+                .collect(Collectors.toList());
     }
 
 }
