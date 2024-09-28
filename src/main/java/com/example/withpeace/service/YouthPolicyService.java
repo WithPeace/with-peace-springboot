@@ -181,10 +181,7 @@ public class YouthPolicyService {
         }
 
         List<PolicyListResponseDto> policyListResponseDtos = youthPolicyPage.getContent().stream()
-                .map(policy -> {
-                    boolean isFavorite = isFavoritePolicy(user, policy.getId());
-                    return PolicyListResponseDto.from(policy, isFavorite);
-                })
+                .map(policy -> createPolicyListResponseDto(user, policy))
                 .collect(Collectors.toList());
 
         return policyListResponseDtos;
@@ -296,18 +293,10 @@ public class YouthPolicyService {
             // 가중치 높은 순으로 정렬 & 지역 필터링 적용 & 상위 6개의 정책 가져오기
             recommendationList =  policyWeights.entrySet().stream()
                     .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()) // 가중치 내림차순
-                    .map(entry -> {
-                        String policyId = entry.getKey();
-                        return youthPolicyRepository.findById(policyId)
-                                .filter(policy -> // // 지역 & 정책분야 필터링 적용
-                                        (regionList.isEmpty() || regionList.contains(policy.getRegion()))
-                                        && (classificationList.isEmpty() || classificationList.contains(policy.getClassification())))
-                                .map(policy -> {
-                                    boolean isFavorite = isFavoritePolicy(user, policy.getId()); // 찜하기 여부
-                                    return PolicyListResponseDto.from(policy, isFavorite);
-                                })
-                                .orElse(null); // 정책 없으면 null 반환
-                    })
+                    .map(entry -> youthPolicyRepository.findById(entry.getKey())
+                            .filter(policy -> applyRegionAndClassificationFilter(policy, regionList, classificationList)) // 지역 & 정책분야 필터링 적용
+                            .map(policy -> createPolicyListResponseDto(user, policy)) // 필터링된 정책으로 PolicyListResponseDto 생성
+                            .orElse(null)) // 정책 없으면 null 반환
                     .filter(Objects::nonNull) // null값 제거 (유효하지 않은 정책 필터링)
                     .limit(6) // 상위 6개 정책 선택
                     .collect(Collectors.toList());
@@ -332,6 +321,17 @@ public class YouthPolicyService {
         }
 
         return recommendationList;
+    }
+
+    private boolean applyRegionAndClassificationFilter(YouthPolicy policy, List<EPolicyRegion> regionList, List<EPolicyClassification> classificationList) {
+        // 정책이 지역 및 정책분야 필터 조건을 만족하는지 확인
+        return (regionList.isEmpty() || regionList.contains(policy.getRegion()))
+                && (classificationList.isEmpty() || classificationList.contains(policy.getClassification()));
+    }
+
+    private PolicyListResponseDto createPolicyListResponseDto(User user, YouthPolicy policy) {
+        boolean isFavorite = isFavoritePolicy(user, policy.getId()); // 찜하기 여부
+        return PolicyListResponseDto.from(policy, isFavorite);
     }
 
     private Map<String, Integer> calculateInteractionWeight(User user) {
@@ -365,14 +365,9 @@ public class YouthPolicyService {
         List<YouthPolicy> hotPolicyList = youthPolicyRepository.findHotPolicies();
 
         return hotPolicyList.stream()
-                .filter(policy -> // // 지역 & 정책분야 필터링 적용
-                        (regionList.isEmpty() || regionList.contains(policy.getRegion()))
-                        && (classificationList.isEmpty() || classificationList.contains(policy.getClassification())))
+                .filter(policy -> applyRegionAndClassificationFilter(policy, regionList, classificationList)) // 지역 & 정책분야 필터링 적용
                 .limit(count) // 필요한 정책 수만큼 가져옴
-                .map(policy -> {
-                    boolean isFavorite = isFavoritePolicy(user, policy.getId());
-                    return PolicyListResponseDto.from(policy, isFavorite);
-                })
+                .map(policy -> createPolicyListResponseDto(user, policy))
                 .collect(Collectors.toList());
     }
 
@@ -381,10 +376,7 @@ public class YouthPolicyService {
         List<YouthPolicy> hotPolicyList = youthPolicyRepository.findHotPolicies();
 
         return hotPolicyList.stream()
-                .map(policy -> {
-                    boolean isFavorite = isFavoritePolicy(user, policy.getId());
-                    return PolicyListResponseDto.from(policy, isFavorite);
-                })
+                .map(policy -> createPolicyListResponseDto(user, policy))
                 .limit(6)
                 .collect(Collectors.toList());
     }
