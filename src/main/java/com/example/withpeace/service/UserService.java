@@ -153,6 +153,7 @@ public class UserService {
         return userRepository.existsByNickname(nickname);
     }
 
+    @Transactional
     public Boolean updateRegionAndClassification(Long userId, String region, String classification) {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
@@ -197,6 +198,7 @@ public class UserService {
         return user.getClassifications();
     }
 
+    @Transactional
     public UserPolicyFilterResponseDto getRegionAndClassification(Long userId) {
         User user =
                 userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
