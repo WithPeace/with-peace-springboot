@@ -24,8 +24,8 @@ public interface YouthPolicyRepository extends JpaRepository<YouthPolicy, Long> 
     @Query("SELECT p FROM YouthPolicy p " +
             "LEFT JOIN ViewPolicy v ON p.id = v.policyId " +
             "LEFT JOIN FavoritePolicy f ON p.id = f.policyId " +
-            "GROUP BY p.id " +
-            "ORDER BY (COALESCE(SUM(v.viewCount), 0) * 1 + COALESCE(COUNT(f), 0) * 3) DESC")
+            "GROUP BY p.rnum, p.id, p.title, p.region, p.classification, f.id " +
+            "ORDER BY (COALESCE(SUM(v.viewCount), 0) * 1 + COALESCE(COUNT(f.policyId), 0) * 3) DESC")
     List<YouthPolicy> findHotPolicies();
 
 }
