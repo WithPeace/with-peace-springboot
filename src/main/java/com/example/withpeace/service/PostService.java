@@ -227,7 +227,9 @@ public class PostService {
             blobIdsToDelete.add(BlobId.of(bucketName, blobName));
         }
 
-        storage.delete(blobIdsToDelete);
+        if (!blobIdsToDelete.isEmpty()) {
+            storage.delete(blobIdsToDelete);
+        }
     }
 
     @Transactional
