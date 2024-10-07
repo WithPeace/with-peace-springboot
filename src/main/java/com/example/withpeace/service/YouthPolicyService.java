@@ -281,12 +281,12 @@ public class YouthPolicyService {
     }
 
     @Transactional
-    public List<PolicyListResponseDto> getRecommendationPolicyList(Long userId, String region, String classification) {
+    public List<PolicyListResponseDto> getRecommendationPolicyList(Long userId) {
         User user = getUserById(userId);
         List<PolicyListResponseDto> recommendationList = new ArrayList<>();
 
-        List<EPolicyRegion> regionList = userService.updateAndGetRegionList(user, region); // 지역 필터링 리스트
-        List<EPolicyClassification> classificationList = userService.updateAndGetClassificationList(user, classification); // 정책분야 필터링 리스트
+        List<EPolicyRegion> regionList = user.getRegions(); // 지역 필터링 리스트
+        List<EPolicyClassification> classificationList = user.getClassifications(); // 정책분야 필터링 리스트:
         Map<String, Integer> policyWeights = calculateInteractionWeight(user); // 사용자별 가중치 계산
 
         if(!policyWeights.isEmpty()) { // 상호작용 데이터가 있는 경우
