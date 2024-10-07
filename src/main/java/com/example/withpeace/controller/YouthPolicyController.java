@@ -69,10 +69,8 @@ public class YouthPolicyController {
 
     // 맞춤 정책 리스트 조회
     @GetMapping("/recommendations")
-    public ResponseDto<?> getRecommendationPolicyList(@UserId Long userId,
-                                                      @RequestParam(defaultValue = "") String region,
-                                                      @RequestParam(defaultValue = "") String classification) {
-        List<PolicyListResponseDto> recommendationPolicyList = youthPolicyService.getRecommendationPolicyList(userId, region, classification);
+    public ResponseDto<?> getRecommendationPolicyList(@UserId Long userId) {
+        List<PolicyListResponseDto> recommendationPolicyList = youthPolicyService.getRecommendationPolicyList(userId);
         return ResponseDto.ok(recommendationPolicyList);
     }
 
