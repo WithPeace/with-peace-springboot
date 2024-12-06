@@ -3,6 +3,7 @@ package com.example.withpeace.controller;
 import com.example.withpeace.annotation.UserId;
 import com.example.withpeace.dto.ResponseDto;
 import com.example.withpeace.dto.response.PolicyListResponseDto;
+import com.example.withpeace.dto.response.PolicySearchResponseDto;
 import com.example.withpeace.service.YouthPolicyService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -79,5 +80,15 @@ public class YouthPolicyController {
     public ResponseDto<?> getHotPolicyList(@UserId Long userId) {
         List<PolicyListResponseDto> hotPolicyList = youthPolicyService.getHotPolicyList(userId);
         return ResponseDto.ok(hotPolicyList);
+    }
+
+    // 청년 정책 검색
+    @GetMapping("/search")
+    public ResponseDto<?> getSearchPolicyList(@UserId Long userId,
+                                    @RequestParam String keyword,
+                                    @RequestParam(defaultValue = "1") @Valid @NotNull @Min(1) Integer pageIndex,
+                                    @RequestParam(defaultValue = "10") @Valid @NotNull @Min(10) Integer pageSize) {
+        PolicySearchResponseDto searchPolicyList = youthPolicyService.getSearchPolicyList(userId, keyword, pageIndex - 1, pageSize);
+        return ResponseDto.ok(searchPolicyList);
     }
 }
