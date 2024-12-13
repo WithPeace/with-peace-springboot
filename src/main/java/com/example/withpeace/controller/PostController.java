@@ -9,6 +9,7 @@ import com.example.withpeace.dto.response.PostDetailResponseDto;
 import com.example.withpeace.dto.response.PostRegisterResponseDto;
 import com.example.withpeace.service.PostService;
 import com.example.withpeace.type.ETopic;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -29,7 +30,7 @@ public class PostController {
 
     private final PostService postService;
 
-    // 게시글 등록
+    @Operation(summary = "게시글 등록", description = "새로운 게시글을 등록합니다. 이미지 파일은 선택사항입니다.", tags = {"Post"})
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseDto<PostRegisterResponseDto> registerPost(@UserId Long userId,
                                                              @Valid @ModelAttribute("postRegisterRequest") PostRegisterRequestDto postRegisterRequestDto,
@@ -39,13 +40,13 @@ public class PostController {
         return ResponseDto.ok(new PostRegisterResponseDto(postId));
     }
 
-    // 게시글 상세조회
+    @Operation(summary = "게시글 상세 조회", description = "특정 게시글의 상세 정보를 조회합니다.", tags = {"Post"})
     @GetMapping("/{postId}")
     public ResponseDto<PostDetailResponseDto> getPostDetail(@UserId Long userId, @PathVariable Long postId) {
         return ResponseDto.ok(postService.getPostDetail(userId, postId));
     }
 
-    // 게시글 리스트 조회
+    @Operation(summary = "게시글 리스트 조회", description = "게시글 리스트를 페이징하여 조회합니다. 게시글 타입별로 필터링됩니다.", tags = {"Post"})
     @GetMapping("")
     public ResponseDto<?> getPostList(@UserId Long userId,
                                       @RequestParam ETopic type,
@@ -54,7 +55,7 @@ public class PostController {
         return ResponseDto.ok(postService.getPostList(userId, type, pageIndex, pageSize));
     }
 
-    // 게시글 수정
+    @Operation(summary = "게시글 수정", description = "기존 게시글의 내용을 수정합니다. 이미지도 수정 가능합니다.", tags = {"Post"})
     @PutMapping(value = "/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseDto<PostRegisterResponseDto> updatePost(@UserId Long userId,
                                                              @PathVariable Long postId,
@@ -65,34 +66,34 @@ public class PostController {
         return ResponseDto.ok(new PostRegisterResponseDto(postId));
     }
 
-    // 게시글 삭제
+    @Operation(summary = "게시글 삭제", description = "특정 게시글을 삭제합니다.", tags = {"Post"})
     @DeleteMapping("/{postId}")
     public ResponseDto<?> deletePost(@UserId Long userId, @PathVariable Long postId) {
         return ResponseDto.ok(postService.deletePost(userId, postId));
     }
 
-    // 게시글 신고
+    @Operation(summary = "게시글 신고", description = "부적절한 게시글을 신고합니다. 신고 이유를 선택합니다.", tags = {"Post"})
     @PostMapping("/{postId}/reportPost")
     public ResponseDto<?> reportPost(@UserId Long userId, @PathVariable Long postId,
                                      @Valid @RequestBody ReportRegisterRequestDto reason) {
         return ResponseDto.ok(postService.reportPost(userId, postId, reason.reason()));
     }
 
-    // 댓글 생성
+    @Operation(summary = "댓글 등록", description = "특정 게시글에 댓글을 등록합니다.", tags = {"Post"})
     @PostMapping("/{postId}/comments/register")
     public ResponseDto<?> registerComment(@UserId Long userId, @PathVariable Long postId,
                                           @Valid @RequestBody CommentRegisterRequestDto content) {
         return ResponseDto.ok(postService.registerComment(userId, postId, content.content()));
     }
 
-    // 댓글 신고
+    @Operation(summary = "댓글 신고", description = "부적절한 댓글을 신고합니다.", tags = {"Post"})
     @PostMapping("/{commentId}/reportComment")
     public ResponseDto<?> reportComment(@UserId Long userId, @PathVariable Long commentId,
                                      @Valid @RequestBody ReportRegisterRequestDto reason) {
         return ResponseDto.ok(postService.reportComment(userId, commentId, reason.reason()));
     }
 
-    // 자주보는 게시판 조회 (Post topic 별 최신글 하나씩 조회)
+    @Operation(summary = "자주보는 게시판 조회", description = "각 주제별 최신 게시글을 하나씩 조회합니다.", tags = {"Post"})
     @GetMapping("/recents")
     public ResponseDto<?> getRecentPostList(@UserId Long userId) {
         return ResponseDto.ok(postService.getRecentPostList(userId));
