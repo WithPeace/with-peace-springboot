@@ -13,13 +13,25 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI openAPI() {
 
-        SecurityScheme securityScheme = new SecurityScheme()
-                .type(SecurityScheme.Type.APIKEY)
+        // 소셜 로그인용 SecurityScheme
+        SecurityScheme socialAuthScheme = new SecurityScheme()
+                .type(SecurityScheme.Type.HTTP)
+                .scheme("bearer")
                 .in(SecurityScheme.In.HEADER)
-                .name("Authorization");
+                .name("Authorization")
+                .description("Social Client ID - 소셜 로그인(Google/Apple) 요청 시 사용할 클라이언트 ID를 입력하세요");
 
-        SecurityRequirement securityRequirement = new SecurityRequirement()
-                .addList("Bearer Token");
+        // 서비스 액세스 토큰용 SecurityScheme
+        SecurityScheme accessTokenScheme  = new SecurityScheme()
+                .type(SecurityScheme.Type.HTTP)
+                .scheme("bearer")
+                .in(SecurityScheme.In.HEADER)
+                .name("Authorization")
+                .description("Access Token - 소셜 로그인 후 받은 액세스 토큰을 입력하세요");
+
+        // 기본적으로 Access Token 사용하도록 설정
+        SecurityRequirement defaultRequirement = new SecurityRequirement()
+                .addList("Access Token");
 
         return new OpenAPI()
                 .components(new Components())
