@@ -2,6 +2,7 @@ package com.example.withpeace.config;
 
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,12 +37,16 @@ public class SwaggerConfig {
         SecurityRequirement defaultRequirement = new SecurityRequirement()
                 .addList("Access Token");
 
+        // URL 설정
+        Server server = new Server().url("https://cheongha.site");
+
         return new OpenAPI()
                 .info(apiInfo())
                 .components(new Components()
                         .addSecuritySchemes("Social Auth", socialAuthScheme)
                         .addSecuritySchemes("Access Token", accessTokenScheme))
                 .addSecurityItem(defaultRequirement) // 전역 설정으로 Access Token 사용
+                .addServersItem(server) // 운영 서버 URL
 
                 .tags(Arrays.asList(
                         new Tag().name("Auth").description("인증 및 회원 관리 API"),
