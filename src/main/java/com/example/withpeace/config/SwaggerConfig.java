@@ -38,7 +38,6 @@ public class SwaggerConfig {
                 .addList("Access Token");
 
         Server prodServer = new Server().url("https://cheongha.site"); // 운영 서버 URL
-        Server localServer = new Server().url("http://localhost:8080"); // 로컬 서버 URL
 
         return new OpenAPI()
                 .info(apiInfo())
@@ -46,7 +45,7 @@ public class SwaggerConfig {
                         .addSecuritySchemes("Social Auth", socialAuthScheme)
                         .addSecuritySchemes("Access Token", accessTokenScheme))
                 .addSecurityItem(defaultRequirement) // 전역 설정으로 Access Token 사용
-                .servers(Arrays.asList(prodServer, localServer))
+                addServersItem(prodServer) // 운영 서버 URL
 
                 .tags(Arrays.asList(
                         new Tag().name("Auth").description("인증 및 회원 관리 API"),
