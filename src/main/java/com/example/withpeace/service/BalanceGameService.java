@@ -4,6 +4,7 @@ import com.example.withpeace.domain.BalanceGame;
 import com.example.withpeace.domain.BalanceGameChoice;
 import com.example.withpeace.domain.Comment;
 import com.example.withpeace.domain.User;
+import com.example.withpeace.dto.response.BalanceGameChoiceResponseDto;
 import com.example.withpeace.dto.response.BalanceGameCommentListResponseDto;
 import com.example.withpeace.dto.response.BalanceGameResponseDto;
 import com.example.withpeace.exception.CommonException;
@@ -24,7 +25,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,6 +38,10 @@ public class BalanceGameService {
 
     private User getUserById(Long userId) {
         return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+    }
+
+    private BalanceGame getGameById(Long gameId) {
+        return balanceGameRepository.findById(gameId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_BALANCE_GAME));
     }
 
     @Transactional
@@ -73,6 +77,10 @@ public class BalanceGameService {
             // 댓글 목록 변환
             List<BalanceGameCommentListResponseDto> comments = getCommentsWithChoices(game, allChoicesByGame);
 
+            // 선택 결과 조회
+            long optionACount = getChoiceCount(game, EChoice.OPTION_A);
+            long optionBCount = getChoiceCount(game, EChoice.OPTION_B);
+
             return BalanceGameResponseDto.of(
                     game.getId(),
                     formatGameDate(game.getGameDate()),
@@ -81,6 +89,8 @@ public class BalanceGameService {
                     game.getOptionB(),
                     getUserChoice(allChoicesByGame, game.getId(), user.getId()),
                     isActive(game.getGameDate()),
+                    optionACount,
+                    optionBCount,
                     balanceGameRepository.existsByGameDateLessThan(game.getGameDate()),
                     LocalDate.now().equals(game.getGameDate())
                             ? false : balanceGameRepository.existsByGameDateGreaterThan(game.getGameDate()),
@@ -132,4 +142,42 @@ public class BalanceGameService {
         // 게임이 오늘 날짜이면 "활성", 아니면 "비활성"
         return LocalDate.now().equals(gameDate);
     }
+
+    @Transactional
+    public BalanceGameChoiceResponseDto selectBalanceGameChoice(Long userId, Long gameId, EChoice choice) {
+        // 사용자 존재 여부 확인
+        User user = getUserById(userId);
+
+        // 게임 존재 여부 확인
+        BalanceGame game = getGameById(gameId);
+
+        // 오늘 날짜 게임인지 확인
+        if (!LocalDate.now().equals(game.getGameDate())) {
+            throw new CommonException(ErrorCode.INVALID_BALANCE_GAME_DATE);
+        }
+
+        // 기존 선택 확인
+        boolean alreadySelected = balanceGameChoiceRepository.existsByUserAndGame(user, game);
+        if (alreadySelected) {
+            throw new CommonException(ErrorCode.ALREADY_SELECTED_CHOICE);
+        }
+
+        // 선택 저장
+        balanceGameChoiceRepository.save(BalanceGameChoice.builder()
+                .game(game)
+                .user(user)
+                .choice(choice)
+                .build());
+
+        // 선택 결과 조회
+        long optionACount = getChoiceCount(game, EChoice.OPTION_A);
+        long optionBCount = getChoiceCount(game, EChoice.OPTION_B);
+
+        return new BalanceGameChoiceResponseDto(optionACount, optionBCount);
+    }
+
+    private long getChoiceCount(BalanceGame game, EChoice choice) {
+        return balanceGameChoiceRepository.countByGameAndChoice(game, choice);
+    }
+
 }

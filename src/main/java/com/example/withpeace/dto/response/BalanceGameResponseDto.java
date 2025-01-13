@@ -12,6 +12,8 @@ public record BalanceGameResponseDto(
         String optionB,
         EChoice userChoice, // "OPTION_A" 또는 "OPTION_B" 또는 null
         boolean isActive,
+        Long optionACount,  // A 선택지 선택한 인원 수
+        Long optionBCount,  // B 선택지 선택한 인원 수
         boolean hasPrevious,
         boolean hasNext,
         List<BalanceGameCommentListResponseDto> comments
@@ -24,11 +26,13 @@ public record BalanceGameResponseDto(
             String optionB,
             EChoice userChoice,
             boolean isActive,
+            Long optionACount,
+            Long optionBCount,
             boolean hasPrevious,
             boolean hasNext,
             List<BalanceGameCommentListResponseDto> comments
     ) {
-        return new BalanceGameResponseDto(gameId, date, title, optionA, optionB, userChoice, isActive, hasPrevious, hasNext, comments
-        );
+        return new BalanceGameResponseDto(gameId, date, title, optionA, optionB, userChoice,
+                isActive, optionACount, optionBCount, hasPrevious, hasNext, comments);
     }
 }
