@@ -45,7 +45,7 @@ public class SwaggerConfig {
                         .addSecuritySchemes("Social Auth", socialAuthScheme)
                         .addSecuritySchemes("Access Token", accessTokenScheme))
                 .addSecurityItem(defaultRequirement) // 전역 설정으로 Access Token 사용
-                addServersItem(prodServer) // 운영 서버 URL
+                .addServersItem(prodServer) // 운영 서버 URL
 
                 .tags(Arrays.asList(
                         new Tag().name("Auth").description("인증 및 회원 관리 API"),
