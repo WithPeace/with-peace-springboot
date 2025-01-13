@@ -54,7 +54,8 @@ public class SwaggerConfig {
                         new Tag().name("User").description("사용자 정보 관리 API"),
                         new Tag().name("Post").description("게시글 관련 API"),
                         new Tag().name("App").description("안드로이드 앱 버전 관리 API"),
-                        new Tag().name("Policy").description("정책 관련 API")
+                        new Tag().name("Policy").description("정책 관련 API"),
+                        new Tag().name("BalanceGame").description("밸런스게임 관련 API")
                 ));
     }
 
