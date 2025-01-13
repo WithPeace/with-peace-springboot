@@ -1,6 +1,7 @@
 package com.example.withpeace.service;
 
 import com.example.withpeace.dto.response.RecentPostResponseDto;
+import com.example.withpeace.type.ECommentType;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
@@ -263,6 +264,7 @@ public class PostService {
         try {
             commentRepository.save(Comment.builder()
                     .post(post)
+                    .type(ECommentType.POST)
                     .writer(user)
                     .content(content)
                     .build());

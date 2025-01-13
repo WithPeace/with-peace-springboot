@@ -1,5 +1,6 @@
 package com.example.withpeace.domain;
 
+import com.example.withpeace.type.ECommentType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -28,6 +29,15 @@ public class Comment {
     private Post post;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "game_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private BalanceGame game;
+
+    @Column(name = "type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ECommentType type;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "writer_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private User writer;
@@ -39,11 +49,13 @@ public class Comment {
     private LocalDateTime createDate;
 
     @Builder
-    public Comment(Post post, User writer, String content) {
+    public Comment(Post post, BalanceGame game, ECommentType type, User writer, String content) {
         this.post = post;
+        this.game = game;
+        this.type = type;
         this.writer = writer;
         this.content = content;
         this.createDate = LocalDateTime.now();
     }
-    
+
 }
