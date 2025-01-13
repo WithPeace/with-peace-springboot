@@ -20,6 +20,8 @@ public enum ErrorCode {
     METHOD_ARGUMENT_TYPE_MISMATCH(40006, HttpStatus.BAD_REQUEST, "요청 파라미터의 형태가 잘못되었습니다."),
     DUPLICATE_RESOURCE(40007, HttpStatus.BAD_REQUEST, "중복된 리소스입니다."),
     INVALID_POLICY_SEARCH_KEYWORD(40008, HttpStatus.BAD_REQUEST, "검색어는 2자 이상 입력해주세요."),
+    ALREADY_SELECTED_CHOICE(40009, HttpStatus.BAD_REQUEST, "이미 선택한 밸런스게임입니다."),
+    INVALID_BALANCE_GAME_DATE(40010, HttpStatus.BAD_REQUEST, "참여 가능한 밸런스게임이 아닙니다."),
 
     EXPIRED_TOKEN_ERROR(40100, HttpStatus.UNAUTHORIZED, "만료된 토큰입니다."),
     INVALID_TOKEN_ERROR(40101, HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
@@ -42,6 +44,7 @@ public enum ErrorCode {
     NOT_FOUND_COMMENT(40403, HttpStatus.NOT_FOUND, "해당 댓글이 존재하지 않습니다."),
     NOT_FOUND_APP_VERSION(40404, HttpStatus.NOT_FOUND, "앱 버전 정보가 존재하지 않습니다."),
     NOT_FOUND_YOUTH_POLICY(40405, HttpStatus.NOT_FOUND, "해당 정책이 존재하지 않습니다."),
+    NOT_FOUND_BALANCE_GAME(40406, HttpStatus.NOT_FOUND, "해당 게임이 존재하지 않습니다."),
 
     SERVER_ERROR(50000, HttpStatus.INTERNAL_SERVER_ERROR, "서버 에러 입니다."),
     AUTH_SERVER_USER_INFO_ERROR(50001, HttpStatus.INTERNAL_SERVER_ERROR, "인증 서버 사용자 정보 조회에 실패하였습니다."),

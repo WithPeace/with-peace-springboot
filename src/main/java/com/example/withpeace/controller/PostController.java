@@ -79,14 +79,14 @@ public class PostController {
         return ResponseDto.ok(postService.reportPost(userId, postId, reason.reason()));
     }
 
-    @Operation(summary = "댓글 등록", description = "특정 게시글에 댓글을 등록합니다.", tags = {"Post"})
+    @Operation(summary = "댓글 등록 (v1)", description = "특정 게시글에 댓글을 등록합니다.", tags = {"Post"})
     @PostMapping("/{postId}/comments/register")
     public ResponseDto<?> registerComment(@UserId Long userId, @PathVariable Long postId,
                                           @Valid @RequestBody CommentRegisterRequestDto content) {
         return ResponseDto.ok(postService.registerComment(userId, postId, content.content()));
     }
 
-    @Operation(summary = "댓글 신고", description = "부적절한 댓글을 신고합니다.", tags = {"Post"})
+    @Operation(summary = "댓글 신고 (v1)", description = "부적절한 댓글을 신고합니다.", tags = {"Post"})
     @PostMapping("/{commentId}/reportComment")
     public ResponseDto<?> reportComment(@UserId Long userId, @PathVariable Long commentId,
                                      @Valid @RequestBody ReportRegisterRequestDto reason) {
