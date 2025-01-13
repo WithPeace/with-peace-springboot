@@ -62,6 +62,11 @@ spring:
         project-id: "with-peace-801b6"
         bucket: "cheong-ha-bucket"
 
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
 client:
   provider:
     kakao:
