@@ -22,6 +22,7 @@ public enum ErrorCode {
     INVALID_POLICY_SEARCH_KEYWORD(40008, HttpStatus.BAD_REQUEST, "검색어는 2자 이상 입력해주세요."),
     ALREADY_SELECTED_CHOICE(40009, HttpStatus.BAD_REQUEST, "이미 선택한 밸런스게임입니다."),
     INVALID_BALANCE_GAME_DATE(40010, HttpStatus.BAD_REQUEST, "참여 가능한 밸런스게임이 아닙니다."),
+    INVALID_COMMENT_TYPE(40011, HttpStatus.BAD_REQUEST, "지원하지 않는 댓글 타입입니다."),
 
     EXPIRED_TOKEN_ERROR(40100, HttpStatus.UNAUTHORIZED, "만료된 토큰입니다."),
     INVALID_TOKEN_ERROR(40101, HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
