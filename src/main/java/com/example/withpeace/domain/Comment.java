@@ -52,8 +52,13 @@ public class Comment {
 
     @Builder
     public Comment(Post post, BalanceGame game, ECommentType type, User writer, String content) {
-        this.post = post;
-        this.game = game;
+        if(type == ECommentType.POST) {
+            this.post = post;
+            this.game = null;
+        } else if(type == ECommentType.BALANCE_GAME) {
+            this.post = null;
+            this.game = game;
+        }
         this.type = type;
         this.writer = writer;
         this.content = content;
