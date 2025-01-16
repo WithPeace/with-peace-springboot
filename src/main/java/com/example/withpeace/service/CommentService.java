@@ -1,16 +1,13 @@
 package com.example.withpeace.service;
 
-import com.example.withpeace.domain.BalanceGame;
-import com.example.withpeace.domain.Comment;
-import com.example.withpeace.domain.Post;
-import com.example.withpeace.domain.User;
+import com.example.withpeace.domain.*;
 import com.example.withpeace.dto.request.CommentRegisterRequestV2Dto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
-import com.example.withpeace.repository.BalanceGameRepository;
-import com.example.withpeace.repository.CommentRepository;
-import com.example.withpeace.repository.PostRepository;
-import com.example.withpeace.repository.UserRepository;
+import com.example.withpeace.repository.*;
+import com.example.withpeace.type.EReason;
+import com.example.withpeace.type.EReportType;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +19,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final BalanceGameRepository balanceGameRepository;
+    private final ReportRepository reportRepository;
 
     private User getUserById(Long userId) {
         return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
@@ -35,6 +33,11 @@ public class CommentService {
         return balanceGameRepository.findById(gameId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_BALANCE_GAME));
     }
 
+    private Comment getCommentById(Long commentId) {
+        return commentRepository.findById(commentId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_COMMENT));
+    }
+
+    @Transactional
     public boolean registerCommentV2(Long userId, CommentRegisterRequestV2Dto commentRegisterRequestV2Dto) {
         // 사용자 존재 여부 확인
         User user = getUserById(userId);
@@ -53,6 +56,28 @@ public class CommentService {
         }
 
         commentRepository.save(commentBuilder.build());
+        return true;
+    }
+
+    @Transactional
+    public boolean reportCommentV2(Long userId, Long commentId, EReason reason) {
+        // 사용자 존재 여부 확인
+        User user = getUserById(userId);
+        // 댓글 존재 여부 확인
+        Comment comment = getCommentById(commentId);
+
+        // 해당 댓글 중복 신고 확인
+        if(reportRepository.existsByWriterAndCommentAndType(user, comment, EReportType.COMMENT)) {
+            throw new CommonException(ErrorCode.COMMENT_ALREADY_REPORTED);
+        }
+
+        reportRepository.save(Report.builder()
+                .writer(user)
+                .comment(comment)
+                .type(EReportType.COMMENT)
+                .reason(reason)
+                .build());
+
         return true;
     }
 }
