@@ -16,7 +16,7 @@ public class CommentController {
 
     private final CommentService commentService;
 
-    @Operation(summary = "댓글 등록 (v2)", description = "특정 게시글에 댓글을 등록합니다.", tags = {"Post"})
+    @Operation(summary = "댓글 등록 (v2)", description = "특정 게시글에 댓글을 등록합니다.", tags = {"Comment"})
     @PostMapping
     public ResponseDto<?> registerCommentV2(@UserId Long userId,
                                             @Valid @RequestBody CommentRegisterRequestV2Dto commentRegisterRequestV2Dto) {
