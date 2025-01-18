@@ -65,7 +65,10 @@ spring:
 logging:
   level:
     org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.orm.jdbc.bind: TRACE  # 바인딩된 값 로그 활성화
+    org.hibernate.orm.jdbc.extract: TRACE  # 추출된 값 로그 활성화
+    org.springframework.jdbc.core.JdbcTemplate: DEBUG  # Spring JDBC SQL 로그 활성화
+    org.springframework.jdbc.core.StatementCreatorUtils: TRACE  # PreparedStatement 값 로그 활성화
 
 client:
   provider:
