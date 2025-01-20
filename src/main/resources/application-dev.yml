@@ -62,13 +62,14 @@ spring:
         project-id: "with-peace-801b6"
         bucket: "cheong-ha-bucket"
 
-logging:
-  level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE  # 바인딩된 값 로그 활성화
-    org.hibernate.orm.jdbc.extract: TRACE  # 추출된 값 로그 활성화
-    org.springframework.jdbc.core.JdbcTemplate: DEBUG  # Spring JDBC SQL 로그 활성화
-    org.springframework.jdbc.core.StatementCreatorUtils: TRACE  # PreparedStatement 값 로그 활성화
+# Hibernate SQL 바인딩 로그 활성화
+# logging:
+#   level:
+#     org.hibernate.SQL: DEBUG
+#     org.hibernate.orm.jdbc.bind: TRACE  # 바인딩된 값 로그 활성화
+#     org.hibernate.orm.jdbc.extract: TRACE  # 추출된 값 로그 활성화
+#     org.springframework.jdbc.core.JdbcTemplate: DEBUG  # Spring JDBC SQL 로그 활성화
+#     org.springframework.jdbc.core.StatementCreatorUtils: TRACE  # PreparedStatement 값 로그 활성화
 
 client:
   provider:
