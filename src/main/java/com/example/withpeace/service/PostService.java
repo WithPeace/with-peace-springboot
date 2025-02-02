@@ -130,7 +130,7 @@ public class PostService {
                         .nickname(comment.getWriter().getNickname())
                         .profileImageUrl(comment.getWriter().getProfileImage())
                         .content(comment.getContent())
-                        .createDate(TimeFormatter.timeFormat(comment.getCreateDate()))
+                        .createDate(TimeFormatter.format(comment.getCreateDate()))
                         .build())
                 .collect(Collectors.toList());
 
@@ -143,7 +143,7 @@ public class PostService {
                         .title(post.getTitle())
                         .content(post.getContent())
                         .type(post.getType())
-                        .createDate(TimeFormatter.timeFormat(post.getCreateDate()))
+                        .createDate(TimeFormatter.format(post.getCreateDate()))
                         .postImageUrls(postImageUrls)
                         .comments(comments)
                         .build();
