@@ -1,15 +1,16 @@
 package com.example.withpeace.util;
 
-import org.springframework.stereotype.Component;
+import lombok.experimental.UtilityClass;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-@Component
+@UtilityClass
 public class TimeFormatter {
 
-    public static String timeFormat(LocalDateTime time) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
-        return time.format(formatter);
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+
+    public String format(LocalDateTime time) {
+        return time.format(FORMATTER);
     }
 }
