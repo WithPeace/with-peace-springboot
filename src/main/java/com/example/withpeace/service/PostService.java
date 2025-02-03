@@ -34,10 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -160,12 +157,21 @@ public class PostService {
         Pageable pageable = PageRequest.of(pageIndex, pageSize);
         Page<Post> postPage = postRepository.findByType(type, pageable);
 
+        // 1. 모든 게시물 ID 수집
+        List<Long> postIds = postPage.getContent().stream()
+                .map(Post::getId)
+                .collect(Collectors.toList());
+
+        // 2. 한 번의 쿼리로 모든 이미지 URL 조회
+        Map<Long, String> postImageUrls = imageRepository.findFirstImageUrlsByPostIdsRaw(postIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0], // post_id를 key로
+                        row -> (String) row[1] // url을 value로
+                ));
+
+        // 3. 정적 팩토리 메서드를 사용하여 DTO 생성
         List<PostListResponseDto> postListResponseDtos = postPage.getContent().stream()
-                .map(post -> {
-                    String postImageUrl = imageRepository.findUrlsByPostIdOrderByIdAsc(post.getId())
-                            .orElse(null);
-                    return PostListResponseDto.from(post, postImageUrl);
-                })
+                .map(post -> PostListResponseDto.from(post, postImageUrls.get(post.getId())))
                 .collect(Collectors.toList());
 
         return postListResponseDtos;
