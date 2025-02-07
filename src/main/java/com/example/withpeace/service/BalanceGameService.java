@@ -14,6 +14,7 @@ import com.example.withpeace.repository.BalanceGameRepository;
 import com.example.withpeace.repository.CommentRepository;
 import com.example.withpeace.repository.UserRepository;
 import com.example.withpeace.type.EChoice;
+import com.example.withpeace.util.TimeFormatter;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -119,7 +120,7 @@ public class BalanceGameService {
                 comment.getWriter().getProfileImage(),
                 comment.getContent(),
                 userChoice,
-                comment.getCreateDate().toString()
+                TimeFormatter.format(comment.getCreateDate())
         );
     }
 
