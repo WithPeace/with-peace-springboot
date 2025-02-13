@@ -79,8 +79,9 @@ public class BalanceGameService {
             List<BalanceGameCommentListResponseDto> comments = getCommentsWithChoices(game, allChoicesByGame);
 
             // 선택 결과 조회
-            long optionACount = getChoiceCount(game, EChoice.OPTION_A);
-            long optionBCount = getChoiceCount(game, EChoice.OPTION_B);
+            Map<EChoice, Long> choiceCounts = getChoiceCounts(game);
+            long optionACount = choiceCounts.getOrDefault(EChoice.OPTION_A, 0L);
+            long optionBCount = choiceCounts.getOrDefault(EChoice.OPTION_B, 0L);
 
             return BalanceGameResponseDto.of(
                     game.getId(),
@@ -157,28 +158,34 @@ public class BalanceGameService {
             throw new CommonException(ErrorCode.INVALID_BALANCE_GAME_DATE);
         }
 
-        // 기존 선택 확인
-        boolean alreadySelected = balanceGameChoiceRepository.existsByUserAndGame(user, game);
-        if (alreadySelected) {
-            throw new CommonException(ErrorCode.ALREADY_SELECTED_CHOICE);
+        // 기존 선택 업데이트 (업데이트 성공하면 1 이상 반환, 실패하면 0 반환)
+        int updateCount = balanceGameChoiceRepository.updateBalanceGameChoice(user, game, choice);
+
+        // 기존 선택이 없었다면 새로 저장
+        if(updateCount == 0) {
+            balanceGameChoiceRepository.save(BalanceGameChoice.builder()
+                    .game(game)
+                    .user(user)
+                    .choice(choice)
+                    .build());
         }
 
-        // 선택 저장
-        balanceGameChoiceRepository.save(BalanceGameChoice.builder()
-                .game(game)
-                .user(user)
-                .choice(choice)
-                .build());
-
         // 선택 결과 조회
-        long optionACount = getChoiceCount(game, EChoice.OPTION_A);
-        long optionBCount = getChoiceCount(game, EChoice.OPTION_B);
+        Map<EChoice, Long> choiceCounts = getChoiceCounts(game);
+        long optionACount = choiceCounts.getOrDefault(EChoice.OPTION_A, 0L);
+        long optionBCount = choiceCounts.getOrDefault(EChoice.OPTION_B, 0L);
 
         return new BalanceGameChoiceResponseDto(optionACount, optionBCount);
     }
 
-    private long getChoiceCount(BalanceGame game, EChoice choice) {
-        return balanceGameChoiceRepository.countByGameAndChoice(game, choice);
+    private Map<EChoice, Long> getChoiceCounts(BalanceGame game) {
+        List<Object[]> results = balanceGameChoiceRepository.getChoiceCountsByGame(game);
+
+        return results.stream()
+                .collect(Collectors.toMap(
+                        row -> (EChoice) row[0], // EChoice 값
+                        row -> (Long) row[1] // 선택 개수
+                ));
     }
 
 }
