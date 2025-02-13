@@ -21,6 +21,6 @@ public interface BalanceGameChoiceRepository extends JpaRepository<BalanceGameCh
     @Query("UPDATE BalanceGameChoice bgc SET bgc.choice=:choice WHERE bgc.user=:user AND bgc.game=:game")
     int updateBalanceGameChoice(User user, BalanceGame game, EChoice choice);
 
-    @Query("SELECT bgc.choice, count(bgc) FROM BalanceGameChoice bgc WHERE bgc.game=:game")
+    @Query("SELECT bgc.choice, count(bgc) FROM BalanceGameChoice bgc WHERE bgc.game=:game GROUP BY bgc.choice")
     List<Object[]> getChoiceCountsByGame(BalanceGame game);
 }
