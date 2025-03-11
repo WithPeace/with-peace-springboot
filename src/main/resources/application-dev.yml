@@ -9,8 +9,8 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/withpeace?useSSL=false&serverTimezone=Asia/Seoul&useLegacyDatetimeCode=false&allowPublicKeyRetrieval=true
-    username: root
-    password: Abcd123@
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     hikari:
       pool-name: jpa-hikari-pool
       maximum-pool-size: 5
@@ -48,8 +48,8 @@ spring:
       client:
         registration:
           google:
-            client-id: "836722341563-tttjmd0bh8hf7ja01bpv73lq62knuqbk.apps.googleusercontent.com"
-            client-secret: "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"
+            client-id: ${OAUTH_CLIENT_ID}
+            client-secret: ${OAUTH_CLIENT_SECRET}
             redirect-uri: http://localhost:8080/login/oauth2/code/google
             scope:
               - email
@@ -86,7 +86,23 @@ springdoc:
   swagger-ui:
     operations-sorter: method # HTTP 메소드 순으로 정렬 (DELETE, GET, PATCH, POST, PUT)
 
-jwt.secret: uefrfjr8ew9jfejwr9ejf8w3h4j98fj8e94fhorg9hn3owth48hqf384ohtgfu34oqh8w9th438r2j3490rfj2
+jwt.secret: ${JWT_SECRET}
 slack.webhook.url: https://hooks.slack.com/services/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
 
-youth-policy.api-key: 8209a6c285cde4d07010e0dd
+youth-policy.api-key: 7054b4c5-9db8-410a-8582-9ee5b55c1e59
+
+file:
+  regionCodeDataPath: "/app/data/LegalDongCode_List.txt"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus # 필요한 엔드포인트만 활성화
+    # 민감한 엔드포인트 비활성화
+    env:
+      enabled: false
+    heapdump:
+      enabled: false
+    shutdown:
+      enabled: false
