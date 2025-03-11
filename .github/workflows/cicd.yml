@@ -58,12 +58,24 @@ jobs:
           key: ${{ secrets.PRIVATE_KEY }}
           envs: GITHUB_SHA
           script: |
+            export DB_USERNAME=${{secrets.DB_USERNAME}}
+            export DB_PASSWORD=${{secrets.DB_PASSWORD}}
+            export JWT_SECRET=${{secrets.JWT_SECRET}}
+            export OAUTH_CLIENT_ID=${{secrets.OAUTH_CLIENT_ID}}
+            export OAUTH_CLIENT_SECRET=${{secrets.OAUTH_CLIENT_SECRET}}
+      
             sudo docker ps
             sudo docker stop springboot
             sudo docker rm -f springboot
             sudo docker pull ${{secrets.DOCKER_REPOSITORY}}
             sudo docker run -d -p 8080:8080 --net=host --name springboot \
-              -e TZ=Asia/Seoul \
-              ${{secrets.DOCKER_REPOSITORY}}
+            -e TZ=Asia/Seoul \
+            -e DB_USERNAME=${DB_USERNAME} \
+            -e DB_PASSWORD=${DB_PASSWORD} \
+            -e JWT_SECRET=${JWT_SECRET} \
+            -e OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID} \
+            -e OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET} \
+            ${{secrets.DOCKER_REPOSITORY}}
+            
             sudo docker image prune -f
-
+            
