@@ -83,4 +83,4 @@ slack.webhook.url: https://hooks.slack.com/services/T03MZUC4UBU/B071EM6KHL5/4X83
 youth-policy.api-key: 7054b4c5-9db8-410a-8582-9ee5b55c1e59
 
 file:
-  regionCodeDataPath: "C:\\Users\\dltmdwls\\Projects\\withpeace2\\data\\LegalDongCode_List.txt"
+  regionCodeDataPath: "src/main/resources/data/LegalDongCode_List.txt"
