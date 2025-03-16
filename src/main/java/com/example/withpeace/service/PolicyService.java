@@ -1,5 +1,6 @@
 package com.example.withpeace.service;
 
+import com.example.withpeace.config.LegalDongCodeCache;
 import com.example.withpeace.domain.*;
 import com.example.withpeace.dto.response.*;
 import com.example.withpeace.exception.CommonException;
@@ -8,8 +9,7 @@ import com.example.withpeace.repository.*;
 import com.example.withpeace.type.EActionType;
 import com.example.withpeace.type.EPolicyClassification;
 import com.example.withpeace.type.EPolicyRegion;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import io.micrometer.common.util.StringUtils;
+import com.nimbusds.oauth2.sdk.util.StringUtils;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -17,38 +17,41 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class YouthPolicyService {
+public class PolicyService {
 
     @Value("${youth-policy.api-key}")
-    private String apiKey;
+    private String apiKeyNm;
 
-    private int saveCount = 0;
-
-    private final YouthPolicyRepository youthPolicyRepository;
+    private final PolicyRepository policyRepository;
     private final UserRepository userRepository;
     private final FavoritePolicyRepository favoritePolicyRepository;
     private final ViewPolicyRepository viewPolicyRepository;
     private final UserInteractionRepository userInteractionRepository;
     private final UserService userService;
+    private final WebClient webClient;
+    private final LegalDongCodeCache legalDongCodeCache;
 
-    private YouthPolicy getPolicyById(String policyId) {
-        return youthPolicyRepository.findById(policyId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_YOUTH_POLICY));
+    private Policy getPolicyById(String policyId) {
+        return policyRepository.findById(policyId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_YOUTH_POLICY));
     }
 
     private User getUserById(Long userId) {
@@ -59,100 +62,158 @@ public class YouthPolicyService {
         return favoritePolicyRepository.existsByUserAndPolicyId(user, policyId);
     }
 
-    @Scheduled(cron = "0 0 0 * * MON") // 매주 월요일 00:00에 실행되도록 설정
+    @Scheduled(cron = "0 0 0 * * *") // 매일 00:00에 실행되도록 설정
     @Transactional
-    public void scheduledFetchAndSaveYouthPolicy() {
+    public void refreshYouthPolicies(){
         try {
-            // 데이터 삭제
-            deleteAllYouthPolicies();
-            saveCount = 0;
+            log.info("Fetching youth policy data from external API...");
 
-            // 데이터 가져오기 및 저장
-            fetchAndSaveYouthPolicy();
+            // Open API에서 총 데이터 개수 조회
+            Integer totalCount = fetchTotalPolicyCount();
+            if(totalCount == 0) throw new CommonException(ErrorCode.YOUTH_POLICY_NO_DATA);
 
-            log.info("Youth Policy data update job completed. Total {} policies saved.", saveCount);
-        } catch (CommonException e) {
-            if (e.getErrorCode() == ErrorCode.YOUTH_POLICY_FETCH_AND_SAVE_ERROR
-                || e.getErrorCode() == ErrorCode.YOUTH_POLICY_DELETE_ERROR)
-                throw e;
+            // Open API에서 전체 정책 데이터 조회
+            List<Policy> newPolicies = fetchAllPolicies(totalCount);
+
+            // 기존 데이터와 비교하여 Insert + Update + Hard Delete 수행
+            long beforeCount = policyRepository.count(); // 업데이트 전 개수
+            processYouthPolicies(newPolicies);
+            long afterCount = policyRepository.count(); // 업데이트 후 개수
+
+            log.info("Youth policies successfully updated. Before: {}, After: {}", beforeCount, afterCount);
+
         } catch (Exception e) {
-            throw new CommonException(ErrorCode.YOUTH_POLICY_SCHEDULED_ERROR);
+            log.error("Unexpected error in refreshYouthPolicies: {}", e.getMessage(), e);
+            throw new CommonException(ErrorCode.YOUTH_POLICY_REFRESH_ERROR);
         }
     }
 
-    @Transactional
-    private void deleteAllYouthPolicies() {
+    // Open API에서 전체 데이터 개수 조회
+    private Integer fetchTotalPolicyCount() {
         try {
-            youthPolicyRepository.deleteAll();
-            log.info("All existing youth policies deleted.");
+            return webClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .queryParam("pageType", 2)
+                            .queryParam("rtnType", "json")
+                            .queryParam("apiKeyNm", apiKeyNm)
+                            .queryParam("pageNum", 1)
+                            .queryParam("pageSize", 0)
+                            .build())
+                    .retrieve()
+                    .bodyToMono(YouthPolicyApiListResponseDto.class)
+                    .map(dto -> dto.result().pagingInfo().totalCount())
+                    .defaultIfEmpty(0) // 응답이 없을 경우 기본값 설정
+                    .block();
         } catch (Exception e) {
-            throw new CommonException(ErrorCode.YOUTH_POLICY_DELETE_ERROR);
+            log.error("Failed to fetch total policy count from Open API: {}", e.getMessage(), e);
+            throw new CommonException(ErrorCode.YOUTH_POLICY_TOTAL_COUNT_ERROR);
         }
     }
 
-    @Transactional
-    private void fetchAndSaveYouthPolicy(){
+    // Open API에서 전체 정책 데이터 조회
+    private List<Policy> fetchAllPolicies(Integer totalCount) {
         try {
-            RestTemplate restTemplate = new RestTemplate();
-            XmlMapper xmlMapper = new XmlMapper();
+            // 호출할 페이지 수 계산
+            int pageSize = 50;
+            int totalPageCount = (totalCount + pageSize  - 1) / pageSize;
 
-            String apiUrl = "https://www.youthcenter.go.kr/opi/youthPlcyList.do" +
-                    "?openApiVlak=" + apiKey + "&pageIndex=1&display=1";
+            AtomicInteger sortOrder = new AtomicInteger(1); // 정렬 순서 관리
 
-            // XML 파싱 & 전체 페이지 수 계산
-            String firstPageResponse = restTemplate.getForObject(apiUrl, String.class);
-            YouthPolicyListResponseDto firstPageData = xmlMapper.readValue(firstPageResponse, YouthPolicyListResponseDto.class);
-            int totalCount = firstPageData.totalCount();
-            int pageCount = (totalCount/100) + ((totalCount%100 == 0) ? 0 : 1);
+            // 정책 데이터 가져오기
+            return Flux.range(1, totalPageCount)
+                .delayElements(Duration.ofMillis(500)) // 요청 간 500ms 딜레이
+                .concatMap(pageNum ->
+                        webClient.get()
+                                .uri(uriBuilder -> uriBuilder
+                                        .queryParam("pageType", 2)
+                                        .queryParam("rtnType", "json")
+                                        .queryParam("apiKeyNm", apiKeyNm)
+                                        .queryParam("pageNum", pageNum)
+                                        .queryParam("pageSize", pageSize)
+                                        .build())
+                                .retrieve()
+                                .bodyToMono(YouthPolicyApiListResponseDto.class)
+                                .doOnError(error ->
+                                        log.warn("API request failed, retrying... pageNum={}, error: {}", pageNum, error.getMessage()))
+                                .retryWhen(Retry.fixedDelay(3, Duration.ofSeconds(2))) // 최대 3번, 2초 간격으로 재시도
+                                .flatMapIterable(dto ->
+                                        Optional.ofNullable(dto.result())
+                                                .map(YouthPolicyApiResultResponseDto::policyList)
+                                                .orElse(Collections.emptyList())
+                                )
+                )
+                .map(dto -> dto.toEntity(legalDongCodeCache, sortOrder.getAndIncrement())) // DTO -> Entity 변환 + 순서 부여
+                .collectList() // List<Policy> 형태로 변환
+                .block(); // 동기적으로 실행하여 전체 데이터 획득
+    } catch (Exception e) {
+            log.error("Failed to fetch policy data from Open API: {}", e.getMessage(), e);
+            throw new CommonException(ErrorCode.YOUTH_POLICY_DATA_FETCH_ERROR);
+        }
+    }
 
-            List<YouthPolicy> entities = new ArrayList<>();
+    // 기존 정책 데이터와 비교하여 새로운 데이터를 Insert + Update + Delete 처리
+    @Transactional
+    private void processYouthPolicies(List<Policy> newPolicies) {
+        try {
+            // 기존 데이터 가져오기 (id -> Entity 매핑)
+            Map<String, Policy> existingPolicyMap = policyRepository.findAll()
+                    .stream().collect(Collectors.toMap(Policy::getId, Function.identity()));
 
-            for(int pageIndex=1; pageIndex<=pageCount; pageIndex++){
-                String pageUrl = "https://www.youthcenter.go.kr/opi/youthPlcyList.do" +
-                        "?openApiVlak=" + apiKey + "&pageIndex=" + pageIndex + "&display=100";
-                String pageResponse = restTemplate.getForObject(pageUrl, String.class);
-                YouthPolicyListResponseDto pageData = xmlMapper.readValue(pageResponse, YouthPolicyListResponseDto.class);
+            List<Policy> toSave = new ArrayList<>();
+            List<Policy> toUpdate = new ArrayList<>();
 
-                List<YouthPolicyResponseDto> policies = pageData.youthPolicyListResponseDto();
-                entities.addAll(loadPolicies(policies));
+            // 신규 데이터 저장 & 기존 데이터 업데이트
+            for (int i=0; i<newPolicies.size(); i++) {
+                Policy newPolicy = newPolicies.get(i);
+                newPolicy.setSortOrder(i+1); // Open API 순서 반영
+
+                Policy existingPolicy = existingPolicyMap.get(newPolicy.getId());
+
+                if (existingPolicy == null) {
+                    toSave.add(newPolicy);
+                } else {
+                    // 기존 데이터가 존재하는 경우 내용 비교 후 업데이트 수행
+                    boolean isUpdated = existingPolicy.updateAllFieldsFrom(newPolicy);
+                    if (isUpdated) {
+                        toUpdate.add(existingPolicy);
+                    }
+                }
+
+                // 처리된 데이터는 기존 데이터 목록에서 제거
+                existingPolicyMap.remove(newPolicy.getId());
             }
-            youthPolicyRepository.saveAll(entities);
-            saveCount = entities.size();
 
+            // 기존 데이터 중 Open API에서 삭제된 정책을 삭제 리스트에 추가
+            List<Policy> toDelete = new ArrayList<>(existingPolicyMap.values());
+
+            // Insert + Update + Hard Delete
+            synchronizeYouthPolicies(toSave, toUpdate, toDelete);
         } catch (Exception e) {
-            throw new CommonException(ErrorCode.YOUTH_POLICY_FETCH_AND_SAVE_ERROR);
+            log.error("Error while processing youth policies: {}", e.getMessage(), e);
+            throw new CommonException(ErrorCode.YOUTH_POLICY_PROCESSING_ERROR);
         }
-
     }
 
+    // 새로운 정책 데이터를 저장(Insert), 기존 데이터를 수정(Update), 삭제된 데이터를 제거(Delete)
     @Transactional
-    private List<YouthPolicy> loadPolicies(List<YouthPolicyResponseDto> policies) {
-        List<YouthPolicy> entities = new ArrayList<>();
-        for(YouthPolicyResponseDto policyDto : policies) {
-            YouthPolicy entity = YouthPolicy.builder()
-                    .rnum(policyDto.rnum())
-                    .id(policyDto.id())
-                    .title(policyDto.title())
-                    .introduce(policyDto.introduce())
-                    .regionCode(policyDto.regionCode())
-                    .classificationCode(policyDto.classificationCode())
-                    .ageInfo(policyDto.ageInfo())
-                    .applicationDetails(policyDto.applicationDetails())
-                    .residenceAndIncome(policyDto.residenceAndIncome())
-                    .education(policyDto.education())
-                    .specialization(policyDto.specialization())
-                    .additionalNotes(policyDto.additionalNotes())
-                    .participationRestrictions(policyDto.participationRestrictions())
-                    .applicationProcess(policyDto.applicationProcess())
-                    .screeningAndAnnouncement(policyDto.screeningAndAnnouncement())
-                    .applicationSite(policyDto.applicationSite())
-                    .submissionDocuments(policyDto.submissionDocuments())
-                    .build();
-            entities.add(entity);
+    private void synchronizeYouthPolicies(List<Policy> toSave, List<Policy> toUpdate, List<Policy> toDelete) {
+        try {
+            if (!toSave.isEmpty()) {
+                policyRepository.saveAll(toSave);
+            }
+            if (!toUpdate.isEmpty()) {
+                policyRepository.saveAll(toUpdate);
+            }
+            if (!toDelete.isEmpty()) {
+                policyRepository.deleteAll(toDelete);
+            }
+        } catch (Exception e) {
+            log.error("Error while saving youth policy data: {}", e.getMessage(), e);
+            throw new CommonException(ErrorCode.YOUTH_POLICY_SAVE_ERROR);
         }
-        return entities;
     }
 
+    // ToDo: .map(EPolicyRegion::fromCode) 수정
     @Transactional
     public List<PolicyListResponseDto> getPolicyList(Long userId, String region, String classification, Integer pageIndex, Integer display) {
         User user = getUserById(userId);
@@ -172,16 +233,16 @@ public class YouthPolicyService {
         }
 
         Pageable pageable = PageRequest.of(pageIndex, display);
-        Page<YouthPolicy> youthPolicyPage;
+        Page<Policy> youthPolicyPage;
 
         if (regionList != null && classificationList != null) {
-            youthPolicyPage = youthPolicyRepository.findByRegionInAndClassificationIn(regionList, classificationList, pageable);
+            youthPolicyPage = policyRepository.findByRegionInAndClassificationIn(regionList, classificationList, pageable);
         } else if (regionList != null) {
-            youthPolicyPage = youthPolicyRepository.findByRegionIn(regionList, pageable);
+            youthPolicyPage = policyRepository.findByRegionIn(regionList, pageable);
         } else if (classificationList != null) {
-            youthPolicyPage = youthPolicyRepository.findByClassificationIn(classificationList, pageable);
+            youthPolicyPage = policyRepository.findByClassificationIn(classificationList, pageable);
         } else {
-            youthPolicyPage = youthPolicyRepository.findAll(pageable);
+            youthPolicyPage = policyRepository.findAll(pageable);
         }
 
         List<PolicyListResponseDto> policyListResponseDtos = youthPolicyPage.getContent().stream()
@@ -194,7 +255,7 @@ public class YouthPolicyService {
     @Transactional
     public PolicyDetailResponseDto getPolicyDetail(Long userId, String policyId) {
         User user = getUserById(userId);
-        YouthPolicy policy = getPolicyById(policyId);
+        Policy policy = getPolicyById(policyId);
         boolean isFavorite = isFavoritePolicy(user, policy.getId());
         viewPolicyRepository.incrementViewCount(policyId);
         userInteractionRepository.save(UserInteraction.builder() // 사용자 상호작용 데이터 생성
@@ -209,7 +270,7 @@ public class YouthPolicyService {
     @Transactional
     public void registerFavoritePolicy(Long userId, String policyId) {
         User user = getUserById(userId);
-        YouthPolicy policy = getPolicyById(policyId);
+        Policy policy = getPolicyById(policyId);
 
         try{
             // 찜하기 되어있지 않은 경우 찜하기 처리 수행
@@ -241,7 +302,7 @@ public class YouthPolicyService {
             List<FavoritePolicyListResponseDto> favoritePolicyListResponseDtos = new ArrayList<>();
 
             for(FavoritePolicy favoritePolicy : favoritePolicies) {
-                YouthPolicy policy = youthPolicyRepository.findById(favoritePolicy.getPolicyId()).orElse(null);
+                Policy policy = policyRepository.findById(favoritePolicy.getPolicyId()).orElse(null);
                 if(policy != null) {
                     // 해당 정책이 존재하는 경우
                     if(!favoritePolicy.isActive()) favoritePolicy.setIsActive(true);
@@ -297,7 +358,7 @@ public class YouthPolicyService {
             // 가중치 높은 순으로 정렬 & 지역 필터링 적용 & 상위 6개의 정책 가져오기
             recommendationList =  policyWeights.entrySet().stream()
                     .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()) // 가중치 내림차순
-                    .map(entry -> youthPolicyRepository.findById(entry.getKey())
+                    .map(entry -> policyRepository.findById(entry.getKey())
                             .filter(policy -> applyRegionAndClassificationFilter(policy, regionList, classificationList)) // 지역 & 정책분야 필터링 적용
                             .map(policy -> createPolicyListResponseDto(user, policy)) // 필터링된 정책으로 PolicyListResponseDto 생성
                             .orElse(null)) // 정책 없으면 null 반환
@@ -327,13 +388,13 @@ public class YouthPolicyService {
         return recommendationList;
     }
 
-    private boolean applyRegionAndClassificationFilter(YouthPolicy policy, List<EPolicyRegion> regionList, List<EPolicyClassification> classificationList) {
+    private boolean applyRegionAndClassificationFilter(Policy policy, List<EPolicyRegion> regionList, List<EPolicyClassification> classificationList) {
         // 정책이 지역 및 정책분야 필터 조건을 만족하는지 확인
         return (regionList.isEmpty() || regionList.contains(policy.getRegion()))
                 && (classificationList.isEmpty() || classificationList.contains(policy.getClassification()));
     }
 
-    private PolicyListResponseDto createPolicyListResponseDto(User user, YouthPolicy policy) {
+    private PolicyListResponseDto createPolicyListResponseDto(User user, Policy policy) {
         boolean isFavorite = isFavoritePolicy(user, policy.getId()); // 찜하기 여부
         return PolicyListResponseDto.from(policy, isFavorite);
     }
@@ -366,7 +427,7 @@ public class YouthPolicyService {
 
     public List<PolicyListResponseDto> getHotPolicyList(User user, List<EPolicyRegion> regionList,
                                                          List<EPolicyClassification> classificationList, int count) {
-        List<YouthPolicy> hotPolicyList = youthPolicyRepository.findHotPolicies();
+        List<Policy> hotPolicyList = policyRepository.findHotPolicies();
 
         return hotPolicyList.stream()
                 .filter(policy -> applyRegionAndClassificationFilter(policy, regionList, classificationList)) // 지역 & 정책분야 필터링 적용
@@ -377,7 +438,7 @@ public class YouthPolicyService {
 
     public List<PolicyListResponseDto> getHotPolicyList(Long userId) {
         User user = getUserById(userId);
-        List<YouthPolicy> hotPolicyList = youthPolicyRepository.findHotPolicies();
+        List<Policy> hotPolicyList = policyRepository.findHotPolicies();
 
         return hotPolicyList.stream()
                 .map(policy -> createPolicyListResponseDto(user, policy))
@@ -397,9 +458,9 @@ public class YouthPolicyService {
         // 최신순 정렬
         PageRequest pageRequest = PageRequest.of(pageIndex, pageSize, Sort.by(Sort.Direction.ASC, "rnum"));
         // 동적 검색 조건 생성
-        Specification<YouthPolicy> spec = createSearchSpecification(keyword);
+        Specification<Policy> spec = createSearchSpecification(keyword);
         // 검색 실행
-        Page<YouthPolicy> searchResult = youthPolicyRepository.findAll(spec, pageRequest);
+        Page<Policy> searchResult = policyRepository.findAll(spec, pageRequest);
 
         // 찜한 정책 확인
         Set<String> favoriteIds = getFavoritePolicyIds(user.getId());
@@ -413,7 +474,7 @@ public class YouthPolicyService {
     }
 
     // 동적 검색 조건 생성
-    private Specification<YouthPolicy> createSearchSpecification(String keyword) {
+    private Specification<Policy> createSearchSpecification(String keyword) {
         // SQL Injection 방지를 위한 특수문자 이스케이프 처리
         String escapedKeyword = keyword.trim().replaceAll("[%_\\\\]", "\\\\$0");
 

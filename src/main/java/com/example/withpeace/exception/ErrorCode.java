@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ErrorCode {
 
-
     // Bad Request Error
     NOT_END_POINT(40000, HttpStatus.BAD_REQUEST, "End Point가 존재하지 않습니다."),
     NOT_FOUND_RESOURCE(40000, HttpStatus.BAD_REQUEST, "해당 리소스가 존재하지 않습니다."),
@@ -52,9 +51,13 @@ public enum ErrorCode {
     POST_ERROR(50002, HttpStatus.INTERNAL_SERVER_ERROR, "서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요."),
     FAVORITE_YOUTH_POLICY_ERROR(50003, HttpStatus.INTERNAL_SERVER_ERROR, "서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요."),
 
-    YOUTH_POLICY_SCHEDULED_ERROR( 50100, HttpStatus.INTERNAL_SERVER_ERROR, "청년 정책 데이터를 가져오는 중에 오류가 발생했습니다."),
-    YOUTH_POLICY_FETCH_AND_SAVE_ERROR(50101, HttpStatus.INTERNAL_SERVER_ERROR, "청년 정책 데이터를 저장하는 도중 오류가 발생했습니다."),
-    YOUTH_POLICY_DELETE_ERROR(50102, HttpStatus.INTERNAL_SERVER_ERROR, "청년 정책 데이터를 삭제하는 도중 오류가 발생했습니다.");
+    YOUTH_POLICY_NO_DATA(50100, HttpStatus.INTERNAL_SERVER_ERROR, "청년 정책 데이터가 존재하지 않습니다."),
+    YOUTH_POLICY_REFRESH_ERROR(50101, HttpStatus.INTERNAL_SERVER_ERROR, "청년 정책 데이터를 갱신하는 중에 오류가 발생했습니다."),
+    YOUTH_POLICY_TOTAL_COUNT_ERROR(50102, HttpStatus.INTERNAL_SERVER_ERROR, "Open API에서 정책 개수 조회에 실패했습니다."),
+    YOUTH_POLICY_DATA_FETCH_ERROR(50103, HttpStatus.INTERNAL_SERVER_ERROR, "청년 정책 데이터를 Open API에서 가져오는 도중 오류가 발생했습니다."),
+    YOUTH_POLICY_PROCESSING_ERROR(50104, HttpStatus.INTERNAL_SERVER_ERROR, "청년 정책 데이터를 처리하는 도중 오류가 발생했습니다."),
+    YOUTH_POLICY_SAVE_ERROR(50105, HttpStatus.INTERNAL_SERVER_ERROR, "청년 정책 데이터를 저장하는 도중 오류가 발생했습니다."),
+    YOUTH_POLICY_REGION_LOAD_ERROR(50106, HttpStatus.INTERNAL_SERVER_ERROR, "법정동 코드 데이터를 불러오는 중 오류가 발생했습니다.");
 
     private final Integer code;
     private final HttpStatus httpStatus;
