@@ -3,6 +3,7 @@ package com.example.withpeace.service;
 import com.example.withpeace.config.LegalDongCodeCache;
 import com.example.withpeace.domain.*;
 import com.example.withpeace.dto.response.*;
+import com.example.withpeace.event.FavoritePolicySaveEvent;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.*;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,6 +46,7 @@ public class PolicyService {
     @Value("${youth-policy.api-key}")
     private String apiKeyNm;
 
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final PolicyRepository policyRepository;
     private final UserRepository userRepository;
     private final FavoritePolicyRepository favoritePolicyRepository;
@@ -292,25 +295,15 @@ public class PolicyService {
 
     @Transactional
     public void registerFavoritePolicy(Long userId, String policyId) {
-        User user = getUserById(userId);
-        Policy policy = getPolicyById(policyId);
+        User user = getUserById(userId); // 사용자 조회
+        Policy policy = getPolicyById(policyId); // 정책 조회
+
+        // 찜 INSERT (트랜잭션 분리된 이벤트로 처리)
+        applicationEventPublisher.publishEvent(new FavoritePolicySaveEvent(user, policy));
 
         try{
-            // 찜하기 되어있지 않은 경우 찜하기 처리 수행
-            if(!isFavoritePolicy(user, policyId)) {
-                favoritePolicyRepository.save(FavoritePolicy.builder()
-                        .policyId(policy.getId())
-                        .user(user)
-                        .title(policy.getTitle())
-                        .build());
-
-                // 사용자 상호작용 데이터 생성
-                userInteractionRepository.save(UserInteraction.builder()
-                        .user(user)
-                        .policyId(policy.getId())
-                        .actionType(EActionType.FAVORITE)
-                        .build());
-            }
+            // 사용자 상호작용 데이터 INSERT (이미 존재하면 action_time만 업데이트)
+            userInteractionRepository.upsertUserInteraction(userId, policyId, EActionType.FAVORITE.name());
         } catch (Exception e) {
             throw new CommonException(ErrorCode.FAVORITE_YOUTH_POLICY_ERROR);
         }

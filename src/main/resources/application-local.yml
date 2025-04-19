@@ -62,6 +62,11 @@ spring:
   config:
     import: optional:file:config/.env[.properties]
 
+logging:
+  level:
+    org.springframework.transaction: WARN
+    org.springframework.orm.jpa: WARN
+
 client:
   provider:
     kakao:
