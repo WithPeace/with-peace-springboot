@@ -309,37 +309,17 @@ public class PolicyService {
         }
     }
 
-    @Transactional
-    public List<FavoritePolicyListResponseDto> getFavoritePolicy(Long userId) {
-        User user = getUserById(userId);
+    @Transactional(readOnly = true)
+    public List<PolicyListResponseDto> getFavoritePolicy(Long userId) {
+        getUserById(userId); // 사용자 조회
 
-        try{
-            List<FavoritePolicy> favoritePolicies = favoritePolicyRepository.findByUserOrderByCreateDateDesc(user);
-            List<FavoritePolicyListResponseDto> favoritePolicyListResponseDtos = new ArrayList<>();
+        // 사용자가 찜한 정책 목록 조회
+        List<Policy> policies = favoritePolicyRepository.findPolicyByUserIdOrderByCreateDateDesc(userId);
 
-            for(FavoritePolicy favoritePolicy : favoritePolicies) {
-                Policy policy = policyRepository.findById(favoritePolicy.getPolicyId()).orElse(null);
-                if(policy != null) {
-                    // 해당 정책이 존재하는 경우
-                    if(!favoritePolicy.isActive()) favoritePolicy.setIsActive(true);
-                    FavoritePolicyListResponseDto responseDto =
-                            FavoritePolicyListResponseDto.from(policy, favoritePolicy.isActive());
-                    favoritePolicyListResponseDtos.add(responseDto);
-                }
-                else { // 해당 정책이 존재하지 않는 경우
-                    if(favoritePolicy.isActive()) favoritePolicy.setIsActive(false);
-                    FavoritePolicyListResponseDto responseDto =
-                            FavoritePolicyListResponseDto.from(favoritePolicy);
-                    favoritePolicyListResponseDtos.add(responseDto);
-                }
-            }
-
-            return favoritePolicyListResponseDtos;
-
-        } catch (Exception e) {
-            log.error(e.getMessage());
-            throw new CommonException(ErrorCode.FAVORITE_YOUTH_POLICY_ERROR);
-        }
+        // DTO 변환 (찜한 정책이므로 찜하기 여부는 모두 true로 반환)
+        return policies.stream()
+                .map(policy -> PolicyListResponseDto.from(policy, true))
+                .toList();
     }
 
     @Transactional
