@@ -12,7 +12,6 @@ import com.example.withpeace.type.EPolicyRegion;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
@@ -273,16 +272,21 @@ public class PolicyService {
 
     @Transactional
     public PolicyDetailResponseDto getPolicyDetail(Long userId, String policyId) {
-        User user = getUserById(userId);
-        Policy policy = getPolicyById(policyId);
-        boolean isFavorite = isFavoritePolicy(user, policy.getId());
-        viewPolicyRepository.incrementViewCount(policyId);
-        userInteractionRepository.save(UserInteraction.builder() // 사용자 상호작용 데이터 생성
-                .user(user)
-                .policyId(policy.getId())
-                .actionType(EActionType.VIEW)
-                .build());
+        getUserById(userId); // 사용자 조회
+        Policy policy = getPolicyById(policyId); // 정책 조회
 
+        // 사용자가 해당 정책을 찜했는지 여부 확인
+        boolean isFavorite = favoritePolicyRepository.existsByUserIdAndPolicyId(userId, policyId);
+        
+        // 정책 조회수 증가 - 조회수가 존재하면 UPDATE, 존재하지 않으면 INSERT
+        if (viewPolicyRepository.updateViewCount(policyId) == 0) {
+            viewPolicyRepository.insertViewCount(policyId);
+        }
+
+        // 사용자 조회 기록 저장 - 조회 기록이 없으면 INSERT, 있으면 UPDATE
+        userInteractionRepository.upsertUserInteraction(userId, policyId, EActionType.VIEW.name());
+
+        // 정책 상세 정보 + 사용자의 찜 여부를 DTO 변환 및 반환
         return PolicyDetailResponseDto.from(policy, isFavorite);
     }
 

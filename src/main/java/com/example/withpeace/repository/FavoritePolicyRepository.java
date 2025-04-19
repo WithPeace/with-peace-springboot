@@ -17,6 +17,8 @@ public interface FavoritePolicyRepository extends JpaRepository<FavoritePolicy, 
     List<FavoritePolicy> findByUserOrderByCreateDateDesc(User user);
 
     boolean existsByUserAndPolicyId(User user, String policyId);
+    // 사용자가 특정 정책을 찜했는지 확인
+    boolean existsByUserIdAndPolicyId(Long userId, String policyId);
 
     List<FavoritePolicy> findByUserId(Long userId);
 }
