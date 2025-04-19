@@ -16,9 +16,14 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @DynamicUpdate
-@Table(name = "user_interactions", indexes = {
-        @Index(name = "idx_user_id", columnList = "user_id")
-})
+@Table(name = "user_interactions",
+        indexes = {
+                @Index(name = "idx_user_id", columnList = "user_id")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_user_policy_action", columnNames = {"user_id", "policy_id", "action_type"})
+        }
+)
 public class UserInteraction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,8 +35,10 @@ public class UserInteraction {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
-    @Column(name = "policy_id", nullable = false)
-    private String policyId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "policy_id", referencedColumnName = "id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Policy policy;
 
     @Column(name = "action_type", nullable = false)
     @Enumerated(EnumType.STRING)
@@ -41,10 +48,9 @@ public class UserInteraction {
     private LocalDateTime actionTime;
 
     @Builder
-
-    public UserInteraction(User user, String policyId, EActionType actionType) {
+    public UserInteraction(User user, Policy policy, EActionType actionType) {
         this.user = user;
-        this.policyId = policyId;
+        this.policy = policy;
         this.actionType = actionType;
         this.actionTime = LocalDateTime.now();
     }

@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Getter
@@ -18,15 +20,17 @@ public class ViewPolicy {
     @Column(name = "id", nullable = false, unique = true)
     private Long id;
 
-    @Column(name = "policy_id", nullable = false, unique = true)
-    private String policyId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "policy_id", referencedColumnName = "id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private Policy policy;
 
     @Column(name = "view_count", nullable = false)
     private int viewCount;
 
     @Builder
-    public ViewPolicy(String policyId, int viewCount) {
-        this.policyId = policyId;
+    public ViewPolicy(Policy policy, int viewCount) {
+        this.policy = policy;
         this.viewCount = viewCount;
     }
 
