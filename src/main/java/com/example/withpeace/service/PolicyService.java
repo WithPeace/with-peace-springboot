@@ -463,14 +463,23 @@ public class PolicyService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<PolicyListResponseDto> getHotPolicyList(Long userId) {
-        User user = getUserById(userId);
-        List<Policy> hotPolicyList = policyRepository.findHotPolicies();
+        getUserById(userId); // 사용자 조회
 
-        return hotPolicyList.stream()
-                .map(policy -> createPolicyListResponseDto(user, policy))
-                .limit(6)
-                .collect(Collectors.toList());
+        // 조회수 + 찜수 기준 상위 6개의 정책만 조회
+        List<Policy> hotPolicies = policyRepository.findTopHotPolicies(6);
+
+        // Lazy 필드 초기화 (native query + DTO 에서 사용 시 필요)
+        hotPolicies.forEach(policy -> Hibernate.initialize(policy.getRegion()));
+
+        // 사용자 찜한 정책 ID 조회
+        Set<String> favoritePolicyIds = getFavoritePolicyIds(userId, hotPolicies);
+
+        // DTO 변환
+        return hotPolicies.stream()
+                .map(policy -> PolicyListResponseDto.from(policy, favoritePolicyIds.contains(policy.getId())))
+                .toList();
     }
 
     public PolicySearchResponseDto getSearchPolicyList(Long userId, String keyword, Integer pageIndex, Integer pageSize) {
