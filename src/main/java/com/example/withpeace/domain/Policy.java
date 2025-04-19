@@ -26,7 +26,7 @@ public class Policy {
     private String introduce; // 정책 소개
 
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "youth_policy_regions",
+    @CollectionTable(name = "policy_regions",
             joinColumns = @JoinColumn(name = "policy_id", referencedColumnName = "id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "region")

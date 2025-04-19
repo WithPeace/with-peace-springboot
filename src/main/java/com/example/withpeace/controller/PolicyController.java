@@ -7,6 +7,7 @@ import com.example.withpeace.dto.response.PolicySearchResponseDto;
 import com.example.withpeace.service.PolicyService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class PolicyController {
                                         @RequestParam(defaultValue = "") String region,
                                         @RequestParam(defaultValue = "") String classification,
                                         @RequestParam(defaultValue = "1") @Valid @NotNull @Min(1) Integer pageIndex,
-                                        @RequestParam(defaultValue = "10") @Valid @NotNull @Min(10) Integer display) {
+                                        @RequestParam(defaultValue = "10") @Valid @NotNull @Min(10) @Max(50) Integer display) {
         List<PolicyListResponseDto> policyList = policyService.getPolicyList(
                 userId, region, classification, pageIndex - 1, display);
 

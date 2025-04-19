@@ -10,17 +10,21 @@ import com.example.withpeace.type.EActionType;
 import com.example.withpeace.type.EPolicyClassification;
 import com.example.withpeace.type.EPolicyRegion;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.util.retry.Retry;
@@ -46,7 +50,6 @@ public class PolicyService {
     private final FavoritePolicyRepository favoritePolicyRepository;
     private final ViewPolicyRepository viewPolicyRepository;
     private final UserInteractionRepository userInteractionRepository;
-    private final UserService userService;
     private final WebClient webClient;
     private final LegalDongCodeCache legalDongCodeCache;
 
@@ -56,10 +59,6 @@ public class PolicyService {
 
     private User getUserById(Long userId) {
         return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
-    }
-
-    private boolean isFavoritePolicy(User user, String policyId) {
-        return favoritePolicyRepository.existsByUserAndPolicyId(user, policyId);
     }
 
     @Scheduled(cron = "0 0 0 * * *") // 매일 00:00에 실행되도록 설정
@@ -213,43 +212,63 @@ public class PolicyService {
         }
     }
 
-    // ToDo: .map(EPolicyRegion::fromCode) 수정
-    @Transactional
+    @Transactional(readOnly = true)
     public List<PolicyListResponseDto> getPolicyList(Long userId, String region, String classification, Integer pageIndex, Integer display) {
-        User user = getUserById(userId);
+        getUserById(userId); // 사용자 조회
 
+        // 지역 필터링 (콤마(,)로 구분된 문자열을 변환)
         List<EPolicyRegion> regionList = null;
         if (StringUtils.isNotBlank(region)) { // null, 빈 문자열, 공백만 있는 문자열을 모두 처리
             regionList = Arrays.stream(region.split(","))
-                    .map(EPolicyRegion::fromCode)
-                    .collect(Collectors.toList());
+                    .map(EPolicyRegion::fromEnglishName)
+                    .toList();
         }
 
+        // 정책 분야 필터링 (콤마(,)로 구분된 문자열을 변환)
         List<EPolicyClassification> classificationList = null;
         if (StringUtils.isNotBlank(classification)) {
             classificationList = Arrays.stream(classification.split(","))
-                    .map(EPolicyClassification::fromCode)
-                    .collect(Collectors.toList());
+                    .map(EPolicyClassification::valueOf)
+                    .toList();
         }
 
-        Pageable pageable = PageRequest.of(pageIndex, display);
-        Page<Policy> youthPolicyPage;
+        // 페이지네이션 설정
+        Pageable pageable = PageRequest.of(pageIndex, display, Sort.by(Sort.Direction.ASC, "sortOrder"));
+        Page<Policy> policyPage;
 
-        if (regionList != null && classificationList != null) {
-            youthPolicyPage = policyRepository.findByRegionInAndClassificationIn(regionList, classificationList, pageable);
-        } else if (regionList != null) {
-            youthPolicyPage = policyRepository.findByRegionIn(regionList, pageable);
-        } else if (classificationList != null) {
-            youthPolicyPage = policyRepository.findByClassificationIn(classificationList, pageable);
-        } else {
-            youthPolicyPage = policyRepository.findAll(pageable);
+        // 필터 조건에 따라 정책 조회
+        if (regionList != null && classificationList != null) { // 지역 필터링 O & 정책분야 필터링 O
+            policyPage = policyRepository.findByRegionInAndClassificationIn(regionList, classificationList, pageable);
+        } else if (regionList != null) { // 지역 필터링 O & 정책분야 필터링 X
+            policyPage = policyRepository.findByRegionIn(regionList, pageable);
+        } else if (classificationList != null) { // 지역 필터링 X & 정책분야 필터링 O
+            policyPage = policyRepository.findByClassificationIn(classificationList, pageable);
+        } else {  // 지역 필터링 X & 정책분야 필터링 X
+            policyPage = policyRepository.findAll(pageable);
         }
 
-        List<PolicyListResponseDto> policyListResponseDtos = youthPolicyPage.getContent().stream()
-                .map(policy -> createPolicyListResponseDto(user, policy))
-                .collect(Collectors.toList());
+        // 사용자가 찜한 정책 ID 목록 조회
+        Set<String> favoritePolicyIds = getFavoritePolicyIds(userId, policyPage.getContent());
 
-        return policyListResponseDtos;
+        // DTO 변환 (사용자의 정책 찜하기 여부 포함)
+        return policyPage.getContent().stream()
+                .map(policy -> PolicyListResponseDto.from(policy, favoritePolicyIds.contains(policy.getId())))
+                .toList();
+    }
+
+    // 사용자가 찜한 정책 ID 목록을 한 번의 쿼리로 조회 (N+1 문제 방지)
+    private Set<String> getFavoritePolicyIds(Long userId, List<Policy> policies) {
+        if (policies.isEmpty()) { return Collections.emptySet(); } // policy가 없을 경우 쿼리 실행 X
+        
+        List<String> policyIds = policies.stream()
+                .map(Policy::getId)
+                .toList();
+
+        // FavoritePolicy 엔티티에서 user_id 와 policy_id를 기준으로 찜한 정책 조회 (policy id만 반환)
+        List<String> favoritePolicyIds = favoritePolicyRepository.findFavoritePolicyIdsByUserIdAndPolicyIds(userId, policyIds);
+
+        // Set<String> 으로 변환하여 빠르게 조회 가능하도록 설정
+        return new HashSet<>(favoritePolicyIds);
     }
 
     @Transactional
