@@ -96,4 +96,5 @@ public class PolicyController {
         PolicySearchResponseDto searchPolicyList = policyService.getSearchPolicyList(userId, keyword, pageIndex - 1, pageSize);
         return ResponseDto.ok(searchPolicyList);
     }
+
 }

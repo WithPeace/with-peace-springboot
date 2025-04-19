@@ -5,6 +5,7 @@ import com.example.withpeace.type.EPolicyClassification;
 import com.example.withpeace.type.EPolicyRegion;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -78,5 +79,8 @@ public interface PolicyRepository extends JpaRepository<Policy, String>, JpaSpec
             "ORDER BY (COALESCE(SUM(vp.view_count), 0) * 1 + COUNT(fp.policy_id) * 3) DESC, p.sort_order ASC " +
             "LIMIT :limit", nativeQuery = true)
     List<Policy> findTopHotPolicies(int limit);
+
+    @EntityGraph(attributePaths = {"region"})
+    Page<Policy> findAll(Specification<Policy> spec, Pageable pageable);
 
 }

@@ -482,76 +482,77 @@ public class PolicyService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public PolicySearchResponseDto getSearchPolicyList(Long userId, String keyword, Integer pageIndex, Integer pageSize) {
-        // 사용자 존재 여부 확인
-        User user = getUserById(userId);
+        getUserById(userId); // 사용자 조회
 
-        // 검색어 검증 (null 체크 및 최소 2자 이상)
+        // 검색어 유효성 검증 (null 체크 및 최소 2자 이상)
         if(keyword == null || keyword.trim().length() < 2) {
             throw new CommonException(ErrorCode.INVALID_POLICY_SEARCH_KEYWORD);
         }
 
-        // 최신순 정렬
-        PageRequest pageRequest = PageRequest.of(pageIndex, pageSize, Sort.by(Sort.Direction.ASC, "rnum"));
-        // 동적 검색 조건 생성
-        Specification<Policy> spec = createSearchSpecification(keyword);
-        // 검색 실행
-        Page<Policy> searchResult = policyRepository.findAll(spec, pageRequest);
+        // 페이징 정보 및 정렬 기준 설정 (sortOrder 기준 오름차순)
+        PageRequest pageRequest = PageRequest.of(pageIndex, pageSize, Sort.by(Sort.Direction.ASC, "sortOrder"));
 
-        // 찜한 정책 확인
-        Set<String> favoriteIds = getFavoritePolicyIds(user.getId());
-        // 검색된 정책들을 DTO로 변환
-        List<PolicyListResponseDto> policies = searchResult.getContent().stream()
-                .map(policy -> PolicyListResponseDto.from(policy, favoriteIds.contains(policy.getId())))
+        // 키워드 기반 동적 검색 조건 생성
+        Specification<Policy> searchSpec = createSearchSpecification(keyword);
+
+        // 정책 검색 실행 (페이징 적용)
+        Page<Policy> searchResultPage = policyRepository.findAll(searchSpec, pageRequest);
+        List<Policy> searchResultList = searchResultPage.getContent();
+
+        // 검색 결과 중 사용자 찜한 정책 ID 조회
+        Set<String> favoritePolicyIds = getFavoritePolicyIds(userId, searchResultList);
+
+        // DTO 변환
+        List<PolicyListResponseDto> result = searchResultList.stream()
+                .map(policy -> PolicyListResponseDto.from(policy, favoritePolicyIds.contains(policy.getId())))
                 .toList();
 
-        // 응답 DTO 생성 및 반환
-        return PolicySearchResponseDto.of(policies, searchResult.getTotalElements());
+        // 응답 DTO 반환 (정책 목록 + 전체 개수)
+        return PolicySearchResponseDto.of(result, searchResultPage.getTotalElements());
     }
 
     // 동적 검색 조건 생성
     private Specification<Policy> createSearchSpecification(String keyword) {
-        // SQL Injection 방지를 위한 특수문자 이스케이프 처리
+        // SQL Injection 방지를 위한 검색어 전처리 (trim + 특수문자 이스케이프)
         String escapedKeyword = keyword.trim().replaceAll("[%_\\\\]", "\\\\$0");
+
+        // 키워드가 공백으로 여러 개 나뉘는 경우
+        String[] keywordArray = escapedKeyword.split("\\s+");
 
         return (root, query, builder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // 1. 전체 문구 검색 (title, introduce, applicationDetails 필드에서 검색)
-            List<Predicate> fullKeywordPredicates = Arrays.asList(
-                    builder.like(root.get("title"), "%" + escapedKeyword + "%"),
-                    builder.like(root.get("introduce"), "%" + escapedKeyword + "%"),
-                    builder.like(root.get("applicationDetails"), "%" + escapedKeyword + "%")
-            );
-            predicates.add(builder.or(fullKeywordPredicates.toArray(new Predicate[fullKeywordPredicates.size()])));
+            // 검색 대상 필드
+            Path<String> title = root.get("title");
+            Path<String> introduce = root.get("introduce");
+            Path<String> applicationDetails = root.get("applicationDetails");
 
-            // 2. 공백으로 분리된 키워드별 검색 (키워드가 여러 개일 경우)
-            String[] keywords = escapedKeyword.split("\\s+");
-            if(keywords.length > 1) { // 여러 개의 키워드가 있을 때
-                List<Predicate> keywordPredicates = Arrays.stream(keywords)
-                        .map(kw -> Arrays.asList(
-                                builder.like(root.get("title"), "%" + kw + "%"),
-                                builder.like(root.get("introduce"), "%" + kw + "%"),
-                                builder.like(root.get("applicationDetails"), "%" + kw + "%")
-                        ))
-                        .map(fieldPredicates -> builder.or(fieldPredicates.toArray(new Predicate[0])))
-                        .collect(Collectors.toList());
-                // 모든 키워드가 하나 이상의 필드에 포함되어야 함 (AND 조건)
-                predicates.add(builder.and(keywordPredicates.toArray(new Predicate[0])));
+            // 1. 전체 문구 검색 (title, introduce, applicationDetails 필드에서 검색)
+            Predicate fullTextMatch = builder.or(
+                    builder.like(title, "%" + escapedKeyword + "%"),
+                    builder.like(introduce, "%" + escapedKeyword + "%"),
+                    builder.like(applicationDetails, "%" + escapedKeyword + "%")
+            );
+            predicates.add(fullTextMatch); // 우선순위 높음
+
+            // 2. 키워드 단어별 부분 검색
+            if(keywordArray.length > 1) { // 여러 개의 키워드가 있을 때
+                // 각 키워드가 한 번 이상 포함되어야 함 (AND 조건)
+                for (String word : keywordArray) {
+                    Predicate wordMatch = builder.or(
+                            builder.like(title, "%" + word + "%"),
+                            builder.like(introduce, "%" + word + "%"),
+                            builder.like(applicationDetails, "%" + word + "%")
+                    );
+                    predicates.add(wordMatch); // 추가 조건으로 붙임
+                }
             }
 
-            // 전체 문구 검색 결과 OR 키워드별 검색 결과
-            return builder.or(predicates.toArray(new Predicate[0]));
+            // AND로 연결하여 모든 조건 만족 (전체 문구 + 단어 포함)
+            return builder.and(predicates.toArray(new Predicate[0]));
         };
-    }
-
-    // 사용자가 찜한 정책 ID 목록 조회
-    private Set<String> getFavoritePolicyIds(Long userId) {
-        // 사용자가 찜한 정책 목록을 조회하여 정책 ID만 Set으로 변환
-        return favoritePolicyRepository.findByUserId(userId)
-                .stream()
-                .map(FavoritePolicy::getPolicyId)
-                .collect(Collectors.toSet());
     }
 
 }
