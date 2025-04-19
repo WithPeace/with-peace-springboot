@@ -78,7 +78,8 @@ public class UserController {
     public ResponseDto<?> updateRegionAndClassification(@UserId Long userId,
                                                     @RequestParam(defaultValue = "") String region,
                                                     @RequestParam(defaultValue = "") String classification) {
-        return ResponseDto.ok(userService.updateRegionAndClassification(userId, region, classification));
+        userService.updateRegionAndClassification(userId, region, classification);
+        return ResponseDto.ok(true);
     }
 
     @Operation(summary = "정책 필터 조회", description = "설정된 관심 지역과 분야를 조회합니다.", tags = {"User"})

@@ -68,7 +68,9 @@ jobs:
             sudo docker stop springboot
             sudo docker rm -f springboot
             sudo docker pull ${{secrets.DOCKER_REPOSITORY}}
+            
             sudo docker run -d -p 8080:8080 --net=host --name springboot \
+            -v /mnt/data/LegalDongCode_List.txt:/app/data/LegalDongCode_List.txt \
             -e TZ=Asia/Seoul \
             -e DB_USERNAME=${DB_USERNAME} \
             -e DB_PASSWORD=${DB_PASSWORD} \

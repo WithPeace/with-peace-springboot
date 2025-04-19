@@ -62,6 +62,18 @@ spring:
   config:
     import: optional:file:config/.env[.properties]
 
+#logging:
+#  level:
+#    org.springframework.transaction: DEBUG
+#    org.springframework.orm.jpa: DEBUG
+logging:
+  level:
+    org.springframework.transaction: WARN
+    org.springframework.orm.jpa: WARN
+    org.hibernate.SQL: debug
+    org.hibernate.type.descriptor.sql: trace  # 파라미터까지 확인 가능
+
+
 client:
   provider:
     kakao:
@@ -83,4 +95,4 @@ slack.webhook.url: https://hooks.slack.com/services/T03MZUC4UBU/B071EM6KHL5/4X83
 youth-policy.api-key: 7054b4c5-9db8-410a-8582-9ee5b55c1e59
 
 file:
-  regionCodeDataPath: "C:\\Users\\dltmdwls\\Projects\\withpeace2\\data\\LegalDongCode_List.txt"
+  regionCodeDataPath: "src/main/resources/data/LegalDongCode_List.txt"

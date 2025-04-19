@@ -4,11 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum EPolicyClassification {
-    JOB("023010"),
-    RESIDENT("023020"),
-    EDUCATION("023030"),
-    WELFARE_AND_CULTURE("023040"),
-    PARTICIPATION_AND_RIGHT("023050"),
+    JOB("001"),
+    RESIDENT("002"),
+    EDUCATION("003"),
+    WELFARE_AND_CULTURE("004"),
+    PARTICIPATION_AND_RIGHT("005"),
     ETC("");
 
     private final String code;
@@ -31,10 +31,9 @@ public enum EPolicyClassification {
     }
 
     public static EPolicyClassification fromCode(String code) {
-        if (code.length() >= 6) {
-            return codeToClassificationMap.getOrDefault(code, ETC);
-        } else {
-            return ETC;
+        if (code == null || !codeToClassificationMap.containsKey(code)) {
+            return EPolicyClassification.ETC;
         }
+        return codeToClassificationMap.get(code);
     }
 }

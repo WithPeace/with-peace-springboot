@@ -38,3 +38,6 @@ out/
 
 ### 환경변수 파일 ###
 .env
+
+### 법정동코드 데이터 파일 ###
+resources/data/LegalDongCode_List.txt

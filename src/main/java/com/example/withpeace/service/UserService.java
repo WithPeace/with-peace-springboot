@@ -13,7 +13,7 @@ import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import io.micrometer.common.util.StringUtils;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -154,54 +154,43 @@ public class UserService {
     }
 
     @Transactional
-    public Boolean updateRegionAndClassification(Long userId, String region, String classification) {
-        User user =
-                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+    public void updateRegionAndClassification(Long userId, String region, String classification) {
+        // 사용자 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
 
-        updateAndGetRegionList(user, region);
-        updateAndGetClassificationList(user, classification);
-
-        return Boolean.TRUE;
+        updateUserRegion(user, region); // 관심 지역 설정
+        updateUserClassification(user, classification); // 관심 분야 설정
     }
 
-    @Transactional
-    // 지역 정보를 처리 & User의 region 필드를 업데이트 & 필터링에 사용할 지역 리스트를 반환
-    public List<EPolicyRegion> updateAndGetRegionList(User user, String region) {
-        List<EPolicyRegion> regionList = Collections.emptyList();
-
-        if (StringUtils.isNotBlank(region)) { // null, 빈 문자열, 공백만 있는 문자열을 모두 처리
-            regionList = Arrays.stream(region.split(","))
-                    .map(EPolicyRegion::fromCode)
-                    .collect(Collectors.toList());
+    // 사용자 관심 지역(region) 정보 업데이트 (입력값이 비어있으면 관심 지역 초기화)
+    public void updateUserRegion(User user, String region) {
+        if (StringUtils.isNotBlank(region)) { // null, 빈 문자열, 공백 문제열 제외
+            List<EPolicyRegion> regionList = Arrays.stream(region.split(","))
+                    .map(EPolicyRegion::fromEnglishName)
+                    .toList();
+            user.setRegions(regionList); // 관심 지역 설정
+        } else {
+            user.setRegions(Collections.emptyList()); // 빈 문자열일 경우 초기화
         }
-
-        user.setRegions(regionList); // 사용자 지역 정보 업데이트
-        userRepository.save(user); // User 테이블에 저장
-
-        return user.getRegions();
     }
 
-    @Transactional
-    // 정책 분야 정보를 처리 & User의 classification 필드를 업데이트 & 필터링에 사용할 분야 리스트를 반환
-    public List<EPolicyClassification> updateAndGetClassificationList(User user, String classification) {
-        List<EPolicyClassification> classificationList = Collections.emptyList();
-
+    // 사용자 관심 분야(classification) 정보 업데이트 (입력값이 비어있으면 관심 분야 초기화)
+    public void updateUserClassification(User user, String classification) {
         if(StringUtils.isNotBlank(classification)) {
-            classificationList = Arrays.stream(classification.split(","))
-                    .map(EPolicyClassification::fromCode)
-                    .collect(Collectors.toList());
+            List<EPolicyClassification> classificationList = Arrays.stream(classification.split(","))
+                    .map(EPolicyClassification::valueOf)
+                    .toList();
+            user.setClassifications(classificationList); // 관심 분야 설정
+        } else {
+            user.setClassifications(Collections.emptyList()); // 빈 문자열일 경우 초기화
         }
-
-        user.setClassifications(classificationList); // 사용자 정책 분야 정보 업데이트
-        userRepository.save(user); // User 테이블에 저장
-
-        return user.getClassifications();
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public UserPolicyFilterResponseDto getRegionAndClassification(Long userId) {
-        User user =
-                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
 
         return UserPolicyFilterResponseDto.from(user);
     }
