@@ -12,7 +12,6 @@ import java.util.List;
 
 @Repository
 public interface UserInteractionRepository extends JpaRepository<UserInteraction, Long> {
-    List<UserInteraction> findByUserOrderByActionTimeDesc(User user);
 
     // 사용자 조회 기록 저장 (조회 기록이 없으면 INSERT, 있으면 UPDATE)
     @Modifying
@@ -20,6 +19,8 @@ public interface UserInteractionRepository extends JpaRepository<UserInteraction
             "VALUES (:userId, :policyId, :actionType, NOW())" +
             "ON DUPLICATE KEY UPDATE action_time = NOW()", nativeQuery = true)
     void upsertUserInteraction(Long userId, String policyId, String actionType);
+
+    List<UserInteraction> findAllByUserOrderByActionTimeDesc(User user);
 
     UserInteraction findByUserIdAndPolicyIdAndActionType(Long userId, String policyId, EActionType actionType);
 

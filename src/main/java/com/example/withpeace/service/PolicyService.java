@@ -341,95 +341,126 @@ public class PolicyService {
         }
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<PolicyListResponseDto> getRecommendationPolicyList(Long userId) {
-        User user = getUserById(userId);
-        List<PolicyListResponseDto> recommendationList = new ArrayList<>();
+        User user = getUserById(userId); // 사용자 조회
 
+        // 사용자의 관심 지역 및 분야 필터링 목록
         List<EPolicyRegion> regionList = user.getRegions(); // 지역 필터링 리스트
-        List<EPolicyClassification> classificationList = user.getClassifications(); // 정책분야 필터링 리스트:
-        Map<String, Integer> policyWeights = calculateInteractionWeight(user); // 사용자별 가중치 계산
+        List<EPolicyClassification> classificationList = user.getClassifications(); // 정책분야 필터링 리스트
 
-        if(!policyWeights.isEmpty()) { // 상호작용 데이터가 있는 경우
-            // 가중치 높은 순으로 정렬 & 지역 필터링 적용 & 상위 6개의 정책 가져오기
-            recommendationList =  policyWeights.entrySet().stream()
-                    .sorted(Map.Entry.<String, Integer>comparingByValue().reversed()) // 가중치 내림차순
-                    .map(entry -> policyRepository.findById(entry.getKey())
-                            .filter(policy -> applyRegionAndClassificationFilter(policy, regionList, classificationList)) // 지역 & 정책분야 필터링 적용
-                            .map(policy -> createPolicyListResponseDto(user, policy)) // 필터링된 정책으로 PolicyListResponseDto 생성
-                            .orElse(null)) // 정책 없으면 null 반환
-                    .filter(Objects::nonNull) // null값 제거 (유효하지 않은 정책 필터링)
-                    .limit(6) // 상위 6개 정책 선택
+        // 사용자 상호작용(조회, 찜하기) 기반 정책 가중치 계산
+        Map<String, Integer> policyWeights = calculatePolicyWeightByInteraction(user);
+
+        List<PolicyListResponseDto> recommendationList = new ArrayList<>();
+        if (!policyWeights.isEmpty()) {
+            // 상호작용 가중치 높은 순으로 추천 정책 ID 추출
+            List<String> recommendedPolicyIds = policyWeights.entrySet().stream()
+                    .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                    .map(Map.Entry::getKey)
+                    .toList();
+
+            // ID 목록으로 정책 한 번에 조회
+            List<Policy> allRecommendedPolicies = policyRepository.findAllById(recommendedPolicyIds);
+
+            // 필터 만족하는 정책만 추출
+            List<Policy> filteredRecommendedPolicies = allRecommendedPolicies.stream()
+                    .filter(policy -> matchesUserPreferenceFilters(policy, regionList, classificationList))
+                    .limit(6)
+                    .toList();
+
+            // 사용자가 찜한 정책 ID 목록 조회
+            Set<String> favoritePolicyIds = getFavoritePolicyIds(userId, filteredRecommendedPolicies);
+
+            // DTO 변환
+            recommendationList = filteredRecommendedPolicies.stream()
+                    .map(policy -> PolicyListResponseDto.from(policy, favoritePolicyIds.contains(policy.getId())))
                     .collect(Collectors.toList());
         }
 
-        // 정책이 6개 미만일 경우 "핫한 정책"으로 부족한 갯수를 채움
-        if(recommendationList.size() < 6) {
-            // recommendationList에 이미 포함된 정책 ID들을 추출
+        // 정책이 6개 미만이면 "핫한 정책"으로 부족한 수 채움
+        if (recommendationList.size() < 6) {
             Set<String> existingPolicyIds = recommendationList.stream()
                     .map(PolicyListResponseDto::id)
                     .collect(Collectors.toSet());
 
-            // "핫한 정책" 리스트에서 기존에 포함된 정책을 제외한 정책들만 가져옴
-            List<PolicyListResponseDto> hotPolicyList = getHotPolicyList(user, regionList, classificationList, 12).stream()
-                    .filter(policy -> !existingPolicyIds.contains(policy.id())) // 기존 정책과 중복되지 않는 것만 선택
-                    .collect(Collectors.toList());
+            int needed = 6 - recommendationList.size();
+            List<PolicyListResponseDto> hotPolicyList = getHotPolicyList(user, regionList, classificationList, needed * 2).stream() // 중복 제거 고려하여 필요수 x 2
+                    .filter(policy -> !existingPolicyIds.contains(policy.id())) // 중복 제거
+                    .limit(6 - recommendationList.size()) // 부족한 수 만큼 제한
+                    .toList();
 
-            // 두 리스트를 합친 후, 6개의 정책을 반환
+            // 추천 리스트 + 핫한 정책 리스트
             recommendationList = Stream.concat(recommendationList.stream(), hotPolicyList.stream())
-                    .limit(6)
                     .collect(Collectors.toList());
         }
 
         return recommendationList;
     }
 
-    private boolean applyRegionAndClassificationFilter(Policy policy, List<EPolicyRegion> regionList, List<EPolicyClassification> classificationList) {
-        // 정책이 지역 및 정책분야 필터 조건을 만족하는지 확인
-        return (regionList.isEmpty() || regionList.contains(policy.getRegion()))
-                && (classificationList.isEmpty() || classificationList.contains(policy.getClassification()));
-    }
-
-    private PolicyListResponseDto createPolicyListResponseDto(User user, Policy policy) {
-        boolean isFavorite = isFavoritePolicy(user, policy.getId()); // 찜하기 여부
-        return PolicyListResponseDto.from(policy, isFavorite);
-    }
-
-    private Map<String, Integer> calculateInteractionWeight(User user) {
-        List<UserInteraction> interactions = userInteractionRepository.findByUserOrderByActionTimeDesc(user);
+    // 사용자 상호작용 데이터 기반 가중치 계산
+    private Map<String, Integer> calculatePolicyWeightByInteraction(User user) {
+        // 사용자의 모든 상호작용 기록을 최신순으로 조회 (조회 & 찜 포함)
+        List<UserInteraction> interactions = userInteractionRepository.findAllByUserOrderByActionTimeDesc(user);
         Map<String, Integer> policyWeights = new HashMap<>(); // 정책별 가중치 저장
 
         for(UserInteraction interaction : interactions) {
-            String policyId = interaction.getPolicyId();
+            String policyId = interaction.getPolicy().getId();
             EActionType actionType = interaction.getActionType();
             LocalDateTime actionTime = interaction.getActionTime();
 
             int weight = policyWeights.getOrDefault(policyId, 0); // 누적된 가중치 가져옴
-            if(actionType == EActionType.VIEW) { // 조회
+            if(actionType == EActionType.VIEW) { // 조회 -> 가중치 1
                 weight += 1;
-            } else if(actionType == EActionType.FAVORITE) { // 찜하기
+            } else if(actionType == EActionType.FAVORITE) { // 찜하기 -> 가중치 3
                 weight += 3;
             }
-            // 최근 상호작용에 대한 가중치 1 추가 (최근 1주 이내)
+            // 최근 1주일 내 상호작용일 경우 가중치 1 추가
             if(actionTime.isAfter(LocalDateTime.now().minusWeeks(1))) {
                 weight += 1;
             }
-            
-            policyWeights.put(policyId, weight); // 정책별 가중치 정보 갱신
+
+            policyWeights.put(policyId, weight);
         }
 
         return policyWeights;
     }
 
+    // 정책이 지역 & 분야 필터 조건을 만족하는지 확인
+    private boolean matchesUserPreferenceFilters(Policy policy, List<EPolicyRegion> regionList, List<EPolicyClassification> classificationList) {
+        // regionList가 비어있지 않다면 모든 지역을 만족해야함
+        boolean regionMatched = regionList.isEmpty() ||
+                policy.getRegion().stream().anyMatch(regionList::contains);
+
+        boolean classificationMatched = classificationList.isEmpty() ||
+                classificationList.contains(policy.getClassification());
+
+        return regionMatched && classificationMatched;
+    }
+
+    // 핫한 정책 조회 및 필터링
     public List<PolicyListResponseDto> getHotPolicyList(User user, List<EPolicyRegion> regionList,
                                                          List<EPolicyClassification> classificationList, int count) {
-        List<Policy> hotPolicyList = policyRepository.findHotPolicies();
+        List<Policy> hotPolicies;
 
-        return hotPolicyList.stream()
-                .filter(policy -> applyRegionAndClassificationFilter(policy, regionList, classificationList)) // 지역 & 정책분야 필터링 적용
-                .limit(count) // 필요한 정책 수만큼 가져옴
-                .map(policy -> createPolicyListResponseDto(user, policy))
-                .collect(Collectors.toList());
+        // 필터 조건에 따라 핫한 정책 조회
+        if (regionList != null && classificationList != null) { // 지역 필터링 O & 정책분야 필터링 O
+            hotPolicies = policyRepository.findTopHotPoliciesByRegionsAndClassifications(regionList, classificationList, count);
+        } else if (regionList != null) { // 지역 필터링 O & 정책분야 필터링 X
+            hotPolicies = policyRepository.findTopHotPoliciesByRegions(regionList, count);
+        } else if (classificationList != null) { // 지역 필터링 X & 정책분야 필터링 O
+            hotPolicies = policyRepository.findTopHotPoliciesByClassifications(classificationList, count);
+        } else {  // 지역 필터링 X & 정책분야 필터링 X
+            hotPolicies = policyRepository.findTopHotPolicies(count);
+        }
+
+        // 사용자 찜한 정책 ID 조회
+        Set<String> favoritePolicyIds = getFavoritePolicyIds(user.getId(), hotPolicies);
+
+        // DTO 변환
+        return hotPolicies.stream()
+                .map(policy -> PolicyListResponseDto.from(policy, favoritePolicyIds.contains(policy.getId())))
+                .toList();
     }
 
     public List<PolicyListResponseDto> getHotPolicyList(Long userId) {

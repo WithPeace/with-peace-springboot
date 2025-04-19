@@ -62,10 +62,17 @@ spring:
   config:
     import: optional:file:config/.env[.properties]
 
+#logging:
+#  level:
+#    org.springframework.transaction: DEBUG
+#    org.springframework.orm.jpa: DEBUG
 logging:
   level:
     org.springframework.transaction: WARN
     org.springframework.orm.jpa: WARN
+    org.hibernate.SQL: debug
+    org.hibernate.type.descriptor.sql: trace  # 파라미터까지 확인 가능
+
 
 client:
   provider:
