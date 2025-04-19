@@ -522,36 +522,32 @@ public class PolicyService {
         String[] keywordArray = escapedKeyword.split("\\s+");
 
         return (root, query, builder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            // 검색 대상 필드
+            // 검색 대상 필드 (title, introduce, applicationDetails 필드에서 검색)
             Path<String> title = root.get("title");
             Path<String> introduce = root.get("introduce");
             Path<String> applicationDetails = root.get("applicationDetails");
 
-            // 1. 전체 문구 검색 (title, introduce, applicationDetails 필드에서 검색)
+            // 1. 전체 문구 포함 조건
             Predicate fullTextMatch = builder.or(
                     builder.like(title, "%" + escapedKeyword + "%"),
                     builder.like(introduce, "%" + escapedKeyword + "%"),
                     builder.like(applicationDetails, "%" + escapedKeyword + "%")
             );
-            predicates.add(fullTextMatch); // 우선순위 높음
 
-            // 2. 키워드 단어별 부분 검색
-            if(keywordArray.length > 1) { // 여러 개의 키워드가 있을 때
-                // 각 키워드가 한 번 이상 포함되어야 함 (AND 조건)
-                for (String word : keywordArray) {
-                    Predicate wordMatch = builder.or(
-                            builder.like(title, "%" + word + "%"),
-                            builder.like(introduce, "%" + word + "%"),
-                            builder.like(applicationDetails, "%" + word + "%")
-                    );
-                    predicates.add(wordMatch); // 추가 조건으로 붙임
-                }
+            // 2. 각 단어가 하나 이상 포함되는 AND 조건
+            List<Predicate> wordPredicates = new ArrayList<>();
+            for (String word : keywordArray) {
+                Predicate wordMatch = builder.or(
+                        builder.like(title, "%" + word + "%"),
+                        builder.like(introduce, "%" + word + "%"),
+                        builder.like(applicationDetails, "%" + word + "%")
+                );
+                wordPredicates.add(wordMatch);
             }
+            Predicate allWordsMatch = builder.and(wordPredicates.toArray(new Predicate[0]));
 
-            // AND로 연결하여 모든 조건 만족 (전체 문구 + 단어 포함)
-            return builder.and(predicates.toArray(new Predicate[0]));
+            // 전체 문구 포함 OR 모든 단어 포함 조건
+            return builder.or(fullTextMatch, allWordsMatch);
         };
     }
 
