@@ -14,11 +14,13 @@ import java.util.List;
 public interface UserInteractionRepository extends JpaRepository<UserInteraction, Long> {
     List<UserInteraction> findByUserOrderByActionTimeDesc(User user);
 
-    UserInteraction findByUserAndPolicyIdAndActionType(User user, String policyId, EActionType favorite);
     // 사용자 조회 기록 저장 (조회 기록이 없으면 INSERT, 있으면 UPDATE)
     @Modifying
     @Query(value = "INSERT INTO user_interactions (user_id, policy_id, action_type, action_time) " +
             "VALUES (:userId, :policyId, :actionType, NOW())" +
             "ON DUPLICATE KEY UPDATE action_time = NOW()", nativeQuery = true)
     void upsertUserInteraction(Long userId, String policyId, String actionType);
+
+    UserInteraction findByUserIdAndPolicyIdAndActionType(Long userId, String policyId, EActionType actionType);
+
 }

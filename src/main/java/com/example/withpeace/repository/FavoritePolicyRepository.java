@@ -14,7 +14,7 @@ public interface FavoritePolicyRepository extends JpaRepository<FavoritePolicy, 
     @Query("SELECT f.policy.id FROM FavoritePolicy f WHERE f.user.id = :userId AND f.policy.id IN :policyIds")
     List<String> findFavoritePolicyIdsByUserIdAndPolicyIds(Long userId, List<String> policyIds);
 
-    List<FavoritePolicy> findByUserOrderByCreateDateDesc(User user);
+    FavoritePolicy findByUserIdAndPolicyId(Long userId, String policyId);
 
     // 사용자가 특정 정책을 찜했는지 확인
     boolean existsByUserIdAndPolicyId(Long userId, String policyId);

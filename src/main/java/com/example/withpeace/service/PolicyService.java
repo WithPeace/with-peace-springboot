@@ -344,18 +344,18 @@ public class PolicyService {
 
     @Transactional
     public void deleteFavoritePolicy(Long userId, String policyId) {
-        User user = getUserById(userId);
-        FavoritePolicy favoritePolicy = favoritePolicyRepository.findByUserAndPolicyId(user, policyId);
+        getUserById(userId); // 사용자 조회
+        getPolicyById(policyId); // 정책 조회
 
         try {
-            // 찜하기 해제가 되어있지 않은 경우 찜하기 해제 처리 수행
-            if(favoritePolicy != null) {
-                favoritePolicyRepository.delete(favoritePolicy);
+            // 정책 찜하기 히제 (존재할 경우에만 삭제)
+            FavoritePolicy favoritePolicy = favoritePolicyRepository.findByUserIdAndPolicyId(userId, policyId);
+            if(favoritePolicy != null) favoritePolicyRepository.delete(favoritePolicy);
 
-                UserInteraction interaction =
-                        userInteractionRepository.findByUserAndPolicyIdAndActionType(user, policyId, EActionType.FAVORITE);
-                if (interaction != null) userInteractionRepository.delete(interaction); // 찜하기 상호작용 데이터 삭제
-            }
+            // 사용자 상호작용 데이터 중 '찜하기" 유형 삭제
+            UserInteraction interaction =
+                    userInteractionRepository.findByUserIdAndPolicyIdAndActionType(userId, policyId, EActionType.FAVORITE);
+            if (interaction != null) userInteractionRepository.delete(interaction);
         } catch (Exception e) {
             throw new CommonException(ErrorCode.FAVORITE_YOUTH_POLICY_ERROR);
         }
