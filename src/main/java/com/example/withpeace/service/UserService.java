@@ -187,10 +187,10 @@ public class UserService {
         }
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public UserPolicyFilterResponseDto getRegionAndClassification(Long userId) {
-        User user =
-                userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
 
         return UserPolicyFilterResponseDto.from(user);
     }
