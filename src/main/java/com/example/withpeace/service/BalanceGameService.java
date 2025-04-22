@@ -1,5 +1,6 @@
 package com.example.withpeace.service;
 
+import com.example.withpeace.component.EntityFinder;
 import com.example.withpeace.domain.BalanceGame;
 import com.example.withpeace.domain.BalanceGameChoice;
 import com.example.withpeace.domain.Comment;
@@ -12,7 +13,6 @@ import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.BalanceGameChoiceRepository;
 import com.example.withpeace.repository.BalanceGameRepository;
 import com.example.withpeace.repository.CommentRepository;
-import com.example.withpeace.repository.UserRepository;
 import com.example.withpeace.type.EChoice;
 import com.example.withpeace.util.TimeFormatter;
 import jakarta.transaction.Transactional;
@@ -32,23 +32,15 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BalanceGameService {
 
-    private final UserRepository userRepository;
     private final BalanceGameRepository balanceGameRepository;
     private final BalanceGameChoiceRepository balanceGameChoiceRepository;
     private final CommentRepository commentRepository;
-
-    private User getUserById(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
-    }
-
-    private BalanceGame getGameById(Long gameId) {
-        return balanceGameRepository.findById(gameId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_BALANCE_GAME));
-    }
+    private final EntityFinder entityFinder;
 
     @Transactional
     public List<BalanceGameResponseDto> getBalanceGame(Long userId, Integer pageIndex, Integer pageSize) {
         // 사용자 존재 여부 확인
-        User user = getUserById(userId);
+        User user = entityFinder.getUserById(userId);
 
         // PageRequest 생성
         PageRequest pageRequest = PageRequest.of(pageIndex, pageSize);
@@ -148,10 +140,10 @@ public class BalanceGameService {
     @Transactional
     public BalanceGameChoiceResponseDto selectBalanceGameChoice(Long userId, Long gameId, EChoice choice) {
         // 사용자 존재 여부 확인
-        User user = getUserById(userId);
+        User user = entityFinder.getUserById(userId);
 
         // 게임 존재 여부 확인
-        BalanceGame game = getGameById(gameId);
+        BalanceGame game = entityFinder.getBalanceGameById(gameId);
 
         // 오늘 날짜 게임인지 확인
         if (!LocalDate.now().equals(game.getGameDate())) {
