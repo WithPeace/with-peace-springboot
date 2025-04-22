@@ -16,7 +16,7 @@ public record PolicyDetailResponseDto(
         String operationPeriod,
         String ageInfo,
         String residence,
-        String Income,
+        String income,
         String education,
         String specialization,
         String additionalNotes,
@@ -46,7 +46,7 @@ public record PolicyDetailResponseDto(
                 .operationPeriod(policy.getOperatingPeriod())
                 .ageInfo(defaultIfNull(policy.getAge()))
                 .residence(defaultIfNull(policy.getResidence()))
-                .Income(defaultIfNull(policy.getIncome()))
+                .income(defaultIfNull(policy.getIncome()))
                 .education(defaultIfNull(policy.getEducation()))
                 .specialization(defaultIfNull(policy.getSpecialization()))
                 .additionalNotes(defaultIfNull(policy.getAdditionalNotes()))
