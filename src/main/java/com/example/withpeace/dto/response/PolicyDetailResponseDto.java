@@ -12,6 +12,8 @@ public record PolicyDetailResponseDto(
         EPolicyClassification classification,
         String applicationDetails,
 
+        String applicationPeriodStatus,
+        String operationPeriod,
         String ageInfo,
         String residence,
         String Income,
@@ -40,6 +42,8 @@ public record PolicyDetailResponseDto(
                 .introduce(defaultIfNull(policy.getIntroduce()))
                 .classification(policy.getClassification())
                 .applicationDetails(defaultIfNull(policy.getApplicationDetails()))
+                .applicationPeriodStatus(policy.getApplicationPeriodStatus())
+                .operationPeriod(policy.getOperatingPeriod())
                 .ageInfo(defaultIfNull(policy.getAge()))
                 .residence(defaultIfNull(policy.getResidence()))
                 .Income(defaultIfNull(policy.getIncome()))
