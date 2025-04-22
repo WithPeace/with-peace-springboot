@@ -1,4 +1,4 @@
-package com.example.withpeace.util;
+package com.example.withpeace.component;
 
 import com.example.withpeace.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

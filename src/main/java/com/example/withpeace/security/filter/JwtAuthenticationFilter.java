@@ -9,7 +9,7 @@ import com.example.withpeace.security.JwtAuthenticationToken;
 import com.example.withpeace.security.info.JwtUserInfo;
 import com.example.withpeace.type.ERole;
 import com.example.withpeace.util.HeaderUtil;
-import com.example.withpeace.util.JwtUtil;
+import com.example.withpeace.component.JwtUtil;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
