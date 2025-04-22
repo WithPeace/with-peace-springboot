@@ -1,5 +1,6 @@
 package com.example.withpeace.service;
 
+import com.example.withpeace.component.EntityFinder;
 import com.example.withpeace.dto.response.RecentPostResponseDto;
 import com.example.withpeace.type.ECommentType;
 import com.google.cloud.storage.BlobId;
@@ -47,25 +48,14 @@ public class PostService {
     private final CommentRepository commentRepository;
     private final ReportRepository reportRepository;
     private final Storage storage;
+    private final EntityFinder entityFinder;
 
     @Value("${spring.cloud.gcp.storage.bucket}")
     private String bucketName;
 
-    private User getUserById(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
-    }
-
-    private Post getPostById(Long postId) {
-        return postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
-    }
-
-    private Comment getCommentById(Long commentId) {
-        return commentRepository.findById(commentId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_COMMENT));
-    }
-
     @Transactional
     public Long registerPost(Long userId, PostRegisterRequestDto postRegisterRequestDto, List<MultipartFile> imageFiles) {
-        User user = getUserById(userId);
+        User user = entityFinder.getUserById(userId);
 
         Post post = postRepository.saveAndFlush(Post.builder()
                 .writer(user)
@@ -84,7 +74,7 @@ public class PostService {
 
     @Transactional
     private void uploadImages(Long postId, List<MultipartFile> imageFiles) {
-        Post post = getPostById(postId);
+        Post post = entityFinder.getPostById(postId);
 
         int idx = 0;
         for (MultipartFile file : imageFiles) {
@@ -113,8 +103,8 @@ public class PostService {
 
     @Transactional
     public PostDetailResponseDto getPostDetail(Long userId, Long postId) {
-        getUserById(userId);
-        Post post = getPostById(postId);
+        entityFinder.getUserById(userId);
+        Post post = entityFinder.getPostById(postId);
 
         List<String> postImageUrls = Optional.ofNullable(imageRepository.findUrlsByPost(post))
                 .orElse(Collections.emptyList());
@@ -152,7 +142,7 @@ public class PostService {
 
     @Transactional
     public List<PostListResponseDto> getPostList(Long userId, ETopic type, Integer pageIndex, Integer pageSize) {
-        getUserById(userId);
+        entityFinder.getUserById(userId);
 
         Pageable pageable = PageRequest.of(pageIndex, pageSize);
         Page<Post> postPage = postRepository.findByType(type, pageable);
@@ -179,8 +169,8 @@ public class PostService {
 
     @Transactional
     public Long updatePost(Long userId, Long postId, PostRegisterRequestDto postRegisterRequestDto, List<MultipartFile> imageFiles) {
-        getUserById(userId);
-        Post post = getPostById(postId);
+        entityFinder.getUserById(userId);
+        Post post = entityFinder.getPostById(postId);
 
         Boolean isExistDbImage = imageRepository.existsByPost(post); // DB 이미지 존재 여부
 
@@ -208,8 +198,8 @@ public class PostService {
 
     @Transactional
     public Boolean deletePost(Long userId, Long postId) {
-        getUserById(userId);
-        Post post = getPostById(postId);
+        entityFinder.getUserById(userId);
+        Post post = entityFinder.getPostById(postId);
 
         try {
             // GCS 이미지 삭제
@@ -241,8 +231,8 @@ public class PostService {
 
     @Transactional
     public Boolean reportPost(Long userId, Long postId, EReason reason) {
-        User user = getUserById(userId);
-        Post post = getPostById(postId);
+        User user = entityFinder.getUserById(userId);
+        Post post = entityFinder.getPostById(postId);
 
         // 해당 게시글 중복 신고 확인
         boolean alreadyReported = reportRepository.existsByWriterAndPostAndType(user, post, EReportType.POST);
@@ -264,8 +254,8 @@ public class PostService {
 
     @Transactional
     public Boolean registerComment(Long userId, Long postId, String content) {
-        User user = getUserById(userId);
-        Post post = getPostById(postId);
+        User user = entityFinder.getUserById(userId);
+        Post post = entityFinder.getPostById(postId);
 
         try {
             commentRepository.save(Comment.builder()
@@ -285,8 +275,8 @@ public class PostService {
 
     @Transactional
     public Boolean reportComment(Long userId, Long commentId, EReason reason) {
-        User user = getUserById(userId);
-        Comment comment = getCommentById(commentId);
+        User user = entityFinder.getUserById(userId);
+        Comment comment = entityFinder.getCommentById(commentId);
 
         // 해당 댓글 중복 신고 확인
         boolean alreadyReported = reportRepository.existsByWriterAndCommentAndType(user, comment, EReportType.COMMENT);

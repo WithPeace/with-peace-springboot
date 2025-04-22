@@ -1,5 +1,6 @@
 package com.example.withpeace.service;
 
+import com.example.withpeace.component.EntityFinder;
 import com.example.withpeace.domain.*;
 import com.example.withpeace.dto.request.CommentRegisterRequestV2Dto;
 import com.example.withpeace.exception.CommonException;
@@ -15,32 +16,14 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CommentService {
 
-    private final UserRepository userRepository;
     private final CommentRepository commentRepository;
-    private final PostRepository postRepository;
-    private final BalanceGameRepository balanceGameRepository;
     private final ReportRepository reportRepository;
-
-    private User getUserById(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
-    }
-
-    private Post getPostById(Long postId) {
-        return postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
-    }
-
-    private BalanceGame getBalanceGameById(Long gameId) {
-        return balanceGameRepository.findById(gameId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_BALANCE_GAME));
-    }
-
-    private Comment getCommentById(Long commentId) {
-        return commentRepository.findById(commentId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_COMMENT));
-    }
+    private final EntityFinder entityFinder;
 
     @Transactional
     public boolean registerCommentV2(Long userId, CommentRegisterRequestV2Dto commentRegisterRequestV2Dto) {
         // 사용자 존재 여부 확인
-        User user = getUserById(userId);
+        User user = entityFinder.getUserById(userId);
 
         // 댓글 엔티티 빌더 생성
         Comment.CommentBuilder commentBuilder = Comment.builder()
@@ -50,8 +33,8 @@ public class CommentService {
 
         // 대상 ID 존재 여부 확인 후 설정
         switch (commentRegisterRequestV2Dto.targetType()) {
-            case POST -> commentBuilder.post(getPostById(commentRegisterRequestV2Dto.targetId()));
-            case BALANCE_GAME -> commentBuilder.game(getBalanceGameById(commentRegisterRequestV2Dto.targetId()));
+            case POST -> commentBuilder.post(entityFinder.getPostById(commentRegisterRequestV2Dto.targetId()));
+            case BALANCE_GAME -> commentBuilder.game(entityFinder.getBalanceGameById(commentRegisterRequestV2Dto.targetId()));
             default -> throw new CommonException(ErrorCode.INVALID_COMMENT_TYPE);
         }
 
@@ -62,9 +45,9 @@ public class CommentService {
     @Transactional
     public boolean reportCommentV2(Long userId, Long commentId, EReason reason) {
         // 사용자 존재 여부 확인
-        User user = getUserById(userId);
+        User user = entityFinder.getUserById(userId);
         // 댓글 존재 여부 확인
-        Comment comment = getCommentById(commentId);
+        Comment comment = entityFinder.getCommentById(commentId);
 
         // 해당 댓글 중복 신고 확인
         if(reportRepository.existsByWriterAndCommentAndType(user, comment, EReportType.COMMENT)) {

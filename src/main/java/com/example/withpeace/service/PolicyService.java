@@ -1,5 +1,6 @@
 package com.example.withpeace.service;
 
+import com.example.withpeace.component.EntityFinder;
 import com.example.withpeace.config.LegalDongCodeCache;
 import com.example.withpeace.domain.*;
 import com.example.withpeace.dto.response.*;
@@ -54,14 +55,7 @@ public class PolicyService {
     private final UserInteractionRepository userInteractionRepository;
     private final WebClient webClient;
     private final LegalDongCodeCache legalDongCodeCache;
-
-    private Policy getPolicyById(String policyId) {
-        return policyRepository.findById(policyId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_YOUTH_POLICY));
-    }
-
-    private User getUserById(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
-    }
+    private final EntityFinder entityFinder;
 
     @Scheduled(cron = "0 0 0 * * *") // 매일 00:00에 실행되도록 설정
     @Transactional
@@ -216,7 +210,7 @@ public class PolicyService {
 
     @Transactional(readOnly = true)
     public List<PolicyListResponseDto> getPolicyList(Long userId, String region, String classification, Integer pageIndex, Integer display) {
-        getUserById(userId); // 사용자 조회
+        entityFinder.getUserById(userId); // 사용자 조회
 
         // 지역 필터링 (콤마(,)로 구분된 문자열을 변환)
         List<EPolicyRegion> regionList = null;
@@ -275,8 +269,8 @@ public class PolicyService {
 
     @Transactional
     public PolicyDetailResponseDto getPolicyDetail(Long userId, String policyId) {
-        getUserById(userId); // 사용자 조회
-        Policy policy = getPolicyById(policyId); // 정책 조회
+        entityFinder.getUserById(userId); // 사용자 조회
+        Policy policy = entityFinder.getPolicyById(policyId); // 정책 조회
 
         // 사용자가 해당 정책을 찜했는지 여부 확인
         boolean isFavorite = favoritePolicyRepository.existsByUserIdAndPolicyId(userId, policyId);
@@ -295,8 +289,8 @@ public class PolicyService {
 
     @Transactional
     public void registerFavoritePolicy(Long userId, String policyId) {
-        User user = getUserById(userId); // 사용자 조회
-        Policy policy = getPolicyById(policyId); // 정책 조회
+        User user = entityFinder.getUserById(userId); // 사용자 조회
+        Policy policy = entityFinder.getPolicyById(policyId); // 정책 조회
 
         // 찜 INSERT (트랜잭션 분리된 이벤트로 처리)
         applicationEventPublisher.publishEvent(new FavoritePolicySaveEvent(user, policy));
@@ -311,7 +305,7 @@ public class PolicyService {
 
     @Transactional(readOnly = true)
     public List<PolicyListResponseDto> getFavoritePolicy(Long userId) {
-        getUserById(userId); // 사용자 조회
+        entityFinder.getUserById(userId); // 사용자 조회
 
         // 사용자가 찜한 정책 목록 조회
         List<Policy> policies = favoritePolicyRepository.findPolicyByUserIdOrderByCreateDateDesc(userId);
@@ -324,8 +318,8 @@ public class PolicyService {
 
     @Transactional
     public void deleteFavoritePolicy(Long userId, String policyId) {
-        getUserById(userId); // 사용자 조회
-        getPolicyById(policyId); // 정책 조회
+        entityFinder.getUserById(userId); // 사용자 조회
+        entityFinder.getPolicyById(policyId); // 정책 조회
 
         try {
             // 정책 찜하기 히제 (존재할 경우에만 삭제)
@@ -343,7 +337,7 @@ public class PolicyService {
 
     @Transactional(readOnly = true)
     public List<PolicyListResponseDto> getRecommendationPolicyList(Long userId) {
-        User user = getUserById(userId); // 사용자 조회
+        User user = entityFinder.getUserById(userId); // 사용자 조회
 
         // 사용자의 관심 지역 및 분야 필터링 목록
         List<EPolicyRegion> regionList = user.getRegions(); // 지역 필터링 리스트
@@ -465,7 +459,7 @@ public class PolicyService {
 
     @Transactional(readOnly = true)
     public List<PolicyListResponseDto> getHotPolicyList(Long userId) {
-        getUserById(userId); // 사용자 조회
+        entityFinder.getUserById(userId); // 사용자 조회
 
         // 조회수 + 찜수 기준 상위 6개의 정책만 조회
         List<Policy> hotPolicies = policyRepository.findTopHotPolicies(6);
@@ -484,7 +478,7 @@ public class PolicyService {
 
     @Transactional(readOnly = true)
     public PolicySearchResponseDto getSearchPolicyList(Long userId, String keyword, Integer pageIndex, Integer pageSize) {
-        getUserById(userId); // 사용자 조회
+        entityFinder.getUserById(userId); // 사용자 조회
 
         // 검색어 유효성 검증 (null 체크 및 최소 2자 이상)
         if(keyword == null || keyword.trim().length() < 2) {

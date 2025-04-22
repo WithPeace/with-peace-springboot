@@ -10,7 +10,7 @@ import com.example.withpeace.security.handler.CustomLogOutResultHandler;
 import com.example.withpeace.security.handler.JwtAccessDeniedHandler;
 import com.example.withpeace.security.service.CustomUserDetailService;
 import com.example.withpeace.type.ERole;
-import com.example.withpeace.util.JwtUtil;
+import com.example.withpeace.component.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

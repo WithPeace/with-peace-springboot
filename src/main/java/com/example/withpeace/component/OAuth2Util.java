@@ -1,4 +1,4 @@
-package com.example.withpeace.util;
+package com.example.withpeace.component;
 
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
