@@ -105,8 +105,13 @@ public class LegalDongCodeCache {
      * @return 변환된 지역 정보 (region: 광역시/도, residence: 상세 지역명)
      */
     public Map<String, Object> convertRegionInfo(String regionCodes) {
+        Map<String, Object> result = new HashMap<>();
+
+        // 입력값이 비어 있으면 기본값 반환
         if (regionCodes == null || regionCodes.isBlank()) {
-            return Map.of("region", Set.of(), "residence", "-"); // 빈 Set 반환
+            result.put("region", new HashSet<>());
+            result.put("residence", "-");
+            return result;
         }
 
         String[] codes = regionCodes.split(",");
@@ -131,13 +136,14 @@ public class LegalDongCodeCache {
 
         // 모든 광역시/도가 포함되었을 경우 "전국"으로 설정
         if (uniqueRegions.size() == 17) {
-            return Map.of("region", Set.of(EPolicyRegion.전국), "residence", "전국");
+            result.put("region", new HashSet<>(List.of(EPolicyRegion.전국)));
+            result.put("residence", "전국");
+        } else {
+            result.put("region", uniqueRegions);
+            result.put("residence", residenceList.isEmpty() ? "-" : String.join(", ", residenceList));
         }
 
-        return Map.of(
-                "region", uniqueRegions,
-                "residence", residenceList.isEmpty() ? "-" : String.join(", ", residenceList)
-        );
+        return result;
     }
 
     /**
