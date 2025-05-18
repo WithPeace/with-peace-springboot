@@ -59,7 +59,7 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
           host: ${{secrets.STAGING_HOST}}
-          username: root
+          username: lpromotion00
           key: ${{ secrets.STAGING_PRIVATE_KEY }}
           envs: GITHUB_SHA
           script: |
