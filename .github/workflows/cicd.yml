@@ -70,11 +70,11 @@ jobs:
             export OAUTH_CLIENT_SECRET=${{secrets.OAUTH_CLIENT_SECRET}}
             
             sudo docker ps
-            sudo docker stop springboot-staging
-            sudo docker rm -f springboot-staging
+            sudo docker stop springboot
+            sudo docker rm -f springboot
             sudo docker pull ${{secrets.DOCKER_REPOSITORY}}
             
-            sudo docker run -d -p 8081:8080 --name springboot-staging \
+            sudo docker run -d -p 8081:8080 --net=host --name springboot \
             -v /mnt/data/LegalDongCode_List.txt:/app/data/LegalDongCode_List.txt \
             -e TZ=Asia/Seoul \
             -e DB_USERNAME=${DB_USERNAME} \
