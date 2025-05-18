@@ -4,7 +4,7 @@ name: CI/CD using github actions & docker
 # event trigger
 on:
   push :
-    branches : ["master","dev"]
+    branches : ["master","dev","staging"]
 permissions:
   contents: read
 
@@ -37,6 +37,14 @@ jobs:
           chmod +x ./gradlew
           ./gradlew build -x test
 
+      # Docker build & push to staging
+      - name: Docker build & push to staging
+        if: contains(github.ref, 'staging')
+        run: |
+          docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_TOKEN}}
+          docker build -t ${{secrets.DOCKER_REPOSITORY}}:staging .
+          docker push ${{secrets.DOCKER_REPOSITORY}}:staging
+
       # Docker build & push to prod
       - name: Docker build & push to prod
         if: contains(github.ref, 'dev')
@@ -44,6 +52,30 @@ jobs:
           docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_TOKEN}}
           docker build -t ${{secrets.DOCKER_REPOSITORY}} .
           docker push ${{secrets.DOCKER_REPOSITORY}}
+
+      # 3. Deploy to staging server
+      - name: Deploy to staging
+        if: contains(github.ref, 'staging')
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{secrets.STAGING_HOST}}
+          username: root
+          key: ${{ secrets.STAGING_PRIVATE_KEY }}
+          envs: GITHUB_SHA
+          script: |
+            docker stop springboot-staging || true
+            docker rm -f springboot-staging || true
+            docker pull ${{secrets.DOCKER_REPOSITORY}}:staging
+
+            docker run -d -p 8081:8080 --name springboot-staging \
+              -v /mnt/data/LegalDongCode_List.txt:/app/data/LegalDongCode_List.txt \
+              -e TZ=Asia/Seoul \
+              -e DB_USERNAME=${{secrets.DB_USERNAME}} \
+              -e DB_PASSWORD=${{secrets.DB_PASSWORD}} \
+              -e JWT_SECRET=${{secrets.JWT_SECRET}} \
+              -e OAUTH_CLIENT_ID=${{secrets.OAUTH_CLIENT_ID}} \
+              -e OAUTH_CLIENT_SECRET=${{secrets.OAUTH_CLIENT_SECRET}} \
+              ${{secrets.DOCKER_REPOSITORY}}:staging
 
       # Deploy to prod
       - name: Deploy to prod

@@ -39,6 +39,9 @@ spring:
         order_inserts: true
         order_updates: true
         format_sql: true
+        jdbc.time_zone: Asia/Seoul
+  jackson:
+    time-zone: Asia/Seoul
   # Security OAuth2 설정
   security:
     oauth2:
@@ -58,26 +61,25 @@ spring:
           location: classpath:with-peace-801b6-89c6377f475e.json
         project-id: "with-peace-801b6"
         bucket: "cheong-ha-bucket"
-  # .env 파일 로드
-  config:
-    import: optional:file:config/.env[.properties]
   # Redis
   data:
     redis:
-      host: localhost
+      host: redis
       port: 6379
 
-#logging:
-#  level:
-#    org.springframework.transaction: DEBUG
-#    org.springframework.orm.jpa: DEBUG
+# Hibernate SQL 바인딩 로그 활성화
+# logging:
+#   level:
+#     org.hibernate.SQL: DEBUG
+#     org.hibernate.orm.jdbc.bind: TRACE  # 바인딩된 값 로그 활성화
+#     org.hibernate.orm.jdbc.extract: TRACE  # 추출된 값 로그 활성화
+#     org.springframework.jdbc.core.JdbcTemplate: DEBUG  # Spring JDBC SQL 로그 활성화
+#     org.springframework.jdbc.core.StatementCreatorUtils: TRACE  # PreparedStatement 값 로그 활성화
+
 logging:
   level:
     org.springframework.transaction: WARN
     org.springframework.orm.jpa: WARN
-    org.hibernate.SQL: debug
-    org.hibernate.type.descriptor.sql: trace  # 파라미터까지 확인 가능
-
 
 client:
   provider:
@@ -100,4 +102,17 @@ slack.webhook.url: https://hooks.slack.com/services/T03MZUC4UBU/B071EM6KHL5/4X83
 youth-policy.api-key: 7054b4c5-9db8-410a-8582-9ee5b55c1e59
 
 file:
-  regionCodeDataPath: "src/main/resources/data/LegalDongCode_List.txt"
+  regionCodeDataPath: "/app/data/LegalDongCode_List.txt"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics, prometheus # 필요한 엔드포인트만 활성화
+    # 민감한 엔드포인트 비활성화
+    env:
+      enabled: false
+    heapdump:
+      enabled: false
+    shutdown:
+      enabled: false
