@@ -11,6 +11,8 @@ import com.example.withpeace.repository.*;
 import com.example.withpeace.type.EActionType;
 import com.example.withpeace.type.EPolicyClassification;
 import com.example.withpeace.type.EPolicyRegion;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
@@ -24,6 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,6 +59,7 @@ public class PolicyService {
     private final WebClient webClient;
     private final LegalDongCodeCache legalDongCodeCache;
     private final EntityFinder entityFinder;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Scheduled(cron = "0 0 0 * * *") // 매일 00:00에 실행되도록 설정
     @Transactional
@@ -244,7 +248,7 @@ public class PolicyService {
         }
 
         // 사용자가 찜한 정책 ID 목록 조회
-        Set<String> favoritePolicyIds = getFavoritePolicyIds(userId, policyPage.getContent());
+        Set<String> favoritePolicyIds = getFavoritePolicyIdsFromEntities(userId, policyPage.getContent());
 
         // DTO 변환 (사용자의 정책 찜하기 여부 포함)
         return policyPage.getContent().stream()
@@ -253,7 +257,7 @@ public class PolicyService {
     }
 
     // 사용자가 찜한 정책 ID 목록을 한 번의 쿼리로 조회 (N+1 문제 방지)
-    private Set<String> getFavoritePolicyIds(Long userId, List<Policy> policies) {
+    private Set<String> getFavoritePolicyIdsFromEntities(Long userId, List<Policy> policies) {
         if (policies.isEmpty()) { return Collections.emptySet(); } // policy가 없을 경우 쿼리 실행 X
         
         List<String> policyIds = policies.stream()
@@ -364,7 +368,7 @@ public class PolicyService {
                     .toList();
 
             // 사용자가 찜한 정책 ID 목록 조회
-            Set<String> favoritePolicyIds = getFavoritePolicyIds(userId, filteredRecommendedPolicies);
+            Set<String> favoritePolicyIds = getFavoritePolicyIdsFromEntities(userId, filteredRecommendedPolicies);
 
             // DTO 변환
             recommendationList = filteredRecommendedPolicies.stream()
@@ -449,7 +453,7 @@ public class PolicyService {
         }
 
         // 사용자 찜한 정책 ID 조회
-        Set<String> favoritePolicyIds = getFavoritePolicyIds(user.getId(), hotPolicies);
+        Set<String> favoritePolicyIds = getFavoritePolicyIdsFromEntities(user.getId(), hotPolicies);
 
         // DTO 변환
         return hotPolicies.stream()
@@ -457,23 +461,92 @@ public class PolicyService {
                 .toList();
     }
 
+    /**
+     * 핫한 정책 조회 API
+     * - Redis 캐시(JSON String) 사용
+     * - 사용자 찜 여부만 실시간 반영
+     * - 캐시 저장 시 DTO 리스트를 JSON 문자열로 저장하며, isFavorite 필드는 포함하지 않음
+     */
     @Transactional(readOnly = true)
     public List<PolicyListResponseDto> getHotPolicyList(Long userId) {
         entityFinder.getUserById(userId); // 사용자 조회
 
+        String key = "hot_policies";
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        // 1. Redis 캐시 조회
+        String cachedJson = redisTemplate.opsForValue().get(key);
+        if(cachedJson != null) {
+            try {
+                // JSON 문자열을 객체로 역직렬화
+                List<PolicyCacheListResponseDto> cached = objectMapper.readValue(
+                        cachedJson,
+                        new TypeReference<>() {}
+                );
+
+                // 사용자 찜한 정책 ID 조회
+                Set<String> favoritePolicyIds = getFavoritePolicyIdsFromDtos(userId, cached);
+
+                // 캐시된 리스트에 찜 여부만 반영하여 반환
+                return cached.stream()
+                        .map(dto -> PolicyListResponseDto.builder()
+                                .id(dto.id())
+                                .title(dto.title())
+                                .introduce(dto.introduce())
+                                .classification(dto.classification())
+                                .region(dto.region().stream().map(EPolicyRegion::valueOf).toList())
+                                .ageInfo(dto.ageInfo())
+                                .applicationPeriodStatus(dto.applicationPeriodStatus())
+                                .isFavorite(favoritePolicyIds.contains(dto.id()))
+                                .build())
+                        .toList();
+            } catch (Exception e) {
+                log.error("Failed to deserialize cached policies: {}", e.getMessage());
+                redisTemplate.delete(key); // 캐시 역직렬화 실패 시 캐시 삭제
+            }
+
+        }
+
+        // 2. 캐시 미스 -> DB에서 핫한 정책 조회
         // 조회수 + 찜수 기준 상위 6개의 정책만 조회
         List<Policy> hotPolicies = policyRepository.findTopHotPolicies(6);
-
         // Lazy 필드 초기화 (native query + DTO 에서 사용 시 필요)
         hotPolicies.forEach(policy -> Hibernate.initialize(policy.getRegion()));
-
         // 사용자 찜한 정책 ID 조회
-        Set<String> favoritePolicyIds = getFavoritePolicyIds(userId, hotPolicies);
+        Set<String> favoritePolicyIds = getFavoritePolicyIdsFromEntities(userId, hotPolicies);
 
-        // DTO 변환
-        return hotPolicies.stream()
+        // 3. DTO 변환
+        List<PolicyListResponseDto> result = hotPolicies.stream()
                 .map(policy -> PolicyListResponseDto.from(policy, favoritePolicyIds.contains(policy.getId())))
                 .toList();
+
+        // 4. Redis 캐시 저장
+        List<PolicyCacheListResponseDto> toCache = result.stream()
+                .map(PolicyCacheListResponseDto::from)
+                .toList();
+
+        try {
+            // 객체를 JSON 문자열로 직렬화하여 Redis에 저장
+            String cacheValue = objectMapper.writeValueAsString(toCache);
+
+            // TTL 1시간으로 설정하여 캐시 저장
+            redisTemplate.opsForValue().set(key, cacheValue, Duration.ofHours(1));
+        } catch (Exception e) {
+            // 직렬화 실패 시 로그만 남기고 캐싱은 생략 (기능 영향 없음)
+            log.error("Failed to serialize policies for caching: {}", e.getMessage());
+        }
+
+        return result;
+    }
+
+    /**
+     * Redis 캐시에서 ID만 추출해 찜 여부 확인
+     */
+    private Set<String> getFavoritePolicyIdsFromDtos(Long userId, List<PolicyCacheListResponseDto> dtos) {
+        if (dtos.isEmpty()) return Collections.emptySet();
+        List<String> ids = dtos.stream().map(PolicyCacheListResponseDto::id).toList();
+        List<String> favoriteIds = favoritePolicyRepository.findFavoritePolicyIdsByUserIdAndPolicyIds(userId, ids);
+        return new HashSet<>(favoriteIds);
     }
 
     @Transactional(readOnly = true)
@@ -496,7 +569,7 @@ public class PolicyService {
         List<Policy> searchResultList = searchResultPage.getContent();
 
         // 검색 결과 중 사용자 찜한 정책 ID 조회
-        Set<String> favoritePolicyIds = getFavoritePolicyIds(userId, searchResultList);
+        Set<String> favoritePolicyIds = getFavoritePolicyIdsFromEntities(userId, searchResultList);
 
         // DTO 변환
         List<PolicyListResponseDto> result = searchResultList.stream()
