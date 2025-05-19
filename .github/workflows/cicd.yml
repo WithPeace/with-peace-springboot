@@ -72,7 +72,7 @@ jobs:
             sudo docker ps
             sudo docker stop springboot
             sudo docker rm -f springboot
-            sudo docker pull ${{secrets.DOCKER_REPOSITORY}}
+            sudo docker pull ${{secrets.DOCKER_REPOSITORY}}:staging
             
             sudo docker run -d -p 8081:8080 --net=host --name springboot \
             -v /mnt/data/LegalDongCode_List.txt:/app/data/LegalDongCode_List.txt \
@@ -82,7 +82,7 @@ jobs:
             -e JWT_SECRET=${JWT_SECRET} \
             -e OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID} \
             -e OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET} \
-            ${{secrets.DOCKER_REPOSITORY}}
+            ${{secrets.DOCKER_REPOSITORY}}:staging
             
             sudo docker image prune -f
 
