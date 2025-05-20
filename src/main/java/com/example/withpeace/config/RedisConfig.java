@@ -1,16 +1,16 @@
 package com.example.withpeace.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+
+import java.time.Duration;
 
 /**
  * Redis 설정 클래스
@@ -25,12 +25,24 @@ public class RedisConfig {
     @Value("${spring.data.redis.port}")
     private int port;
 
+    @Value("${spring.data.redis.timeout}")
+    private Duration timeout;
+
     /**
      * Redis 연결을 위한 LettuceConnectionFactory 빈 생성
      */
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        return new LettuceConnectionFactory(host, port);
+        // 1. Redis 서버 정보 설정
+        RedisStandaloneConfiguration standaloneConfiguration = new RedisStandaloneConfiguration(host, port);
+
+        // 2. Lettuce 클라이언트 설정 (명령 타임아웃만 적용)
+        LettuceClientConfiguration clientConfiguration = LettuceClientConfiguration.builder()
+                .commandTimeout(timeout)       // Redis 명령 타임아웃 적용
+                .build();
+
+        // 3. LettuceConnectionFactory 생성
+        return new LettuceConnectionFactory(standaloneConfiguration, clientConfiguration);
     }
 
     /**

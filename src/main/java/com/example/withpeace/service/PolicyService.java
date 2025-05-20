@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -475,7 +476,13 @@ public class PolicyService {
         ObjectMapper objectMapper = new ObjectMapper();
 
         // 1. Redis 캐시 조회
-        String cachedJson = redisTemplate.opsForValue().get(key);
+        String cachedJson = null;
+        try {
+            cachedJson = redisTemplate.opsForValue().get(key);
+        } catch (DataAccessException e) {
+            // Redis 연결 불가 시 DB fallback으로 전환되도록 경고 로그만 출력
+            log.warn("Redis unavailable, fallback to DB: {}", e.getMessage());
+        }
         if(cachedJson != null) {
             try {
                 // JSON 문자열을 객체로 역직렬화
@@ -501,10 +508,9 @@ public class PolicyService {
                                 .build())
                         .toList();
             } catch (Exception e) {
-                log.error("Failed to deserialize cached policies: {}", e.getMessage());
+                log.warn("Failed to deserialize cached policies: {}", e.getMessage());
                 redisTemplate.delete(key); // 캐시 역직렬화 실패 시 캐시 삭제
             }
-
         }
 
         // 2. 캐시 미스 -> DB에서 핫한 정책 조회
@@ -531,9 +537,11 @@ public class PolicyService {
 
             // TTL 1시간으로 설정하여 캐시 저장
             redisTemplate.opsForValue().set(key, cacheValue, Duration.ofHours(1));
+
+            log.info("Successfully cached hot policies to Redis with key '{}'", key);
         } catch (Exception e) {
             // 직렬화 실패 시 로그만 남기고 캐싱은 생략 (기능 영향 없음)
-            log.error("Failed to serialize policies for caching: {}", e.getMessage());
+            log.warn("Failed to serialize policies for caching: {}", e.getMessage());
         }
 
         return result;

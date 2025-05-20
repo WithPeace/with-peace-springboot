@@ -68,6 +68,7 @@ spring:
     redis:
       host: localhost
       port: 6379
+      timeout: 500ms # Redis 명령 실행에 대한 타임아웃 (0.5초)
 
 # Hibernate SQL 바인딩 로그 활성화
 # logging:
@@ -82,6 +83,7 @@ logging:
   level:
     org.springframework.transaction: WARN
     org.springframework.orm.jpa: WARN
+    io.lettuce.core.protocol.ConnectionWatchdog: ERROR
 
 client:
   provider:
