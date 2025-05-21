@@ -7,6 +7,7 @@ spring:
     group:
         local: local
         dev : dev
+        staging-test : staging-test
         debug: debug
 
 management:

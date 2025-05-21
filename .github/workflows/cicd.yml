@@ -4,7 +4,7 @@ name: CI/CD using github actions & docker
 # event trigger
 on:
   push :
-    branches : ["master","dev"]
+    branches : ["master","dev","staging-test"]
 permissions:
   contents: read
 
@@ -37,25 +37,22 @@ jobs:
           chmod +x ./gradlew
           ./gradlew build -x test
 
-      # Docker build & push to prod
-      - name: Docker build & push to prod
-        if: contains(github.ref, 'dev')
+      # Docker Build & Push for staging-test
+      - name: Docker build & push to staging-test
+        if: contains(github.ref, 'staging-test')
         run: |
           docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_TOKEN}}
-          docker build -t ${{secrets.DOCKER_REPOSITORY}} .
-          docker push ${{secrets.DOCKER_REPOSITORY}}
+          docker build -t ${{secrets.DOCKER_REPOSITORY}}:staging-test .
+          docker push ${{secrets.DOCKER_REPOSITORY}}:staging-test
 
-      # Deploy to prod
-      - name: Deploy to prod
+      # 3. Deploy to staging server
+      - name: Deploy to staging-test
+        if: contains(github.ref, 'staging-test')
         uses: appleboy/ssh-action@master
-        id: deploy-prod
-        if: contains(github.ref, 'dev')
         with:
-          host: ${{secrets.HOST}}
-          username: root
-          password: ${{secrets.SSH_PASSWORD}}
-          port: 22
-          key: ${{ secrets.PRIVATE_KEY }}
+          host: ${{secrets.STAGING_HOST}}
+          username: lpromotion00
+          key: ${{ secrets.STAGING_PRIVATE_KEY }}
           envs: GITHUB_SHA
           script: |
             export DB_USERNAME=${{secrets.DB_USERNAME}}
@@ -63,21 +60,21 @@ jobs:
             export JWT_SECRET=${{secrets.JWT_SECRET}}
             export OAUTH_CLIENT_ID=${{secrets.OAUTH_CLIENT_ID}}
             export OAUTH_CLIENT_SECRET=${{secrets.OAUTH_CLIENT_SECRET}}
-      
+            
             sudo docker ps
             sudo docker stop springboot
             sudo docker rm -f springboot
-            sudo docker pull ${{secrets.DOCKER_REPOSITORY}}
+            sudo docker pull ${{secrets.DOCKER_REPOSITORY}}:staging-test
             
-            sudo docker run -d -p 8080:8080 --net=host --name springboot \
+            sudo docker run -d -p 8081:8080 --net=host --name springboot \
             -v /mnt/data/LegalDongCode_List.txt:/app/data/LegalDongCode_List.txt \
             -e TZ=Asia/Seoul \
+            -e SPRING_PROFILES_ACTIVE=staging-test \
             -e DB_USERNAME=${DB_USERNAME} \
             -e DB_PASSWORD=${DB_PASSWORD} \
             -e JWT_SECRET=${JWT_SECRET} \
             -e OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID} \
             -e OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET} \
-            ${{secrets.DOCKER_REPOSITORY}}
+            ${{secrets.DOCKER_REPOSITORY}}:staging-test
             
             sudo docker image prune -f
-            
