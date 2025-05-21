@@ -62,11 +62,11 @@ jobs:
             export OAUTH_CLIENT_SECRET=${{secrets.OAUTH_CLIENT_SECRET}}
             
             sudo docker ps
-            sudo docker stop springboot
-            sudo docker rm -f springboot
+            sudo docker stop springboot-staging-test
+            sudo docker rm -f springboot-staging-test
             sudo docker pull ${{secrets.DOCKER_REPOSITORY}}:staging-test
             
-            sudo docker run -d -p 8081:8080 --net=host --name springboot \
+            sudo docker run -d -p 8081:8080 --net=host --name springboot-staging-test \
             -v /mnt/data/LegalDongCode_List.txt:/app/data/LegalDongCode_List.txt \
             -e TZ=Asia/Seoul \
             -e SPRING_PROFILES_ACTIVE=staging-test \
