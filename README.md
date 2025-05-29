@@ -14,3 +14,26 @@
 기술적 구현을 넘어, **실제 사용자에게 의미 있고 유용한 경험을 제공하는 정책 플랫폼**을 만드는 것이 이 프로젝트의 궁극적인 목표입니다.
 
 <br>
+
+## 🔗 관련 링크
+
+| 구분 | 링크 |
+|------|------|
+| 🖥 ERD | https://dbdiagram.io/d/청하ERD-6835e7ca6980ade2ebb20ee5 |
+| 📚 Swagger 문서 |  |
+| 📝 개발 기록 |  |
+  
+
+## 🛠 기술 스택
+| 구분                 | 기술 & 도구                                                          |
+| -------------------- | -------------------------------------------------------------------- |
+| Language             | Java 17                                                              |
+| Framework            | Spring Boot 3.2.2                                                    |
+| Database             | MySQL 8.0.42, Redis                                                  |
+| API & Doc            | RESTful API, Swagger                                                 |
+| Infra                | Google Cloud Platform(Compute Engine, Cloud Storage), Nginx, Docker  |
+| CI/CD                | GitHub Actions                                                       |
+| Monitoring & Testing | Prometheus, Grafana, InfluxDB, K6                                    |
+| Collaboration Tools  | GitHub, Notion, Slack                                                |
+| Development Tools    | IntelliJ IDEA, DataGrip, Postman                                     |
+
