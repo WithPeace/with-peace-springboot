@@ -1,16 +1,19 @@
 package com.example.withpeace.domain;
 
+import com.example.withpeace.type.ECommentType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
+@BatchSize(size = 50)
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -23,9 +26,18 @@ public class Comment {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false)
+    @JoinColumn(name = "post_id")
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Post post;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "game_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private BalanceGame game;
+
+    @Column(name = "type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ECommentType type;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "writer_id", nullable = false)
@@ -39,11 +51,18 @@ public class Comment {
     private LocalDateTime createDate;
 
     @Builder
-    public Comment(Post post, User writer, String content) {
-        this.post = post;
+    public Comment(Post post, BalanceGame game, ECommentType type, User writer, String content) {
+        if(type == ECommentType.POST) {
+            this.post = post;
+            this.game = null;
+        } else if(type == ECommentType.BALANCE_GAME) {
+            this.post = null;
+            this.game = game;
+        }
+        this.type = type;
         this.writer = writer;
         this.content = content;
         this.createDate = LocalDateTime.now();
     }
-    
+
 }

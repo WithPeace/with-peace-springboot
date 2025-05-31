@@ -21,6 +21,9 @@ public interface ImageRepository extends JpaRepository<Image, Long> {
             nativeQuery = true)
     Optional<String> findUrlsByPostIdOrderByIdAsc(@Param("postId") Long postId);
 
+    @Query(value = "SELECT i.post_id, MIN(i.url) FROM images i WHERE i.post_id IN :postIds GROUP BY i.post_id", nativeQuery = true)
+    List<Object[]> findFirstImageUrlsByPostIdsRaw(List<Long> postIds);
+
     boolean existsByPost(Post post);
 
     @Modifying

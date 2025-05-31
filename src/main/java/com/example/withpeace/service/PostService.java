@@ -1,5 +1,8 @@
 package com.example.withpeace.service;
 
+import com.example.withpeace.component.EntityFinder;
+import com.example.withpeace.dto.response.RecentPostResponseDto;
+import com.example.withpeace.type.ECommentType;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
@@ -32,10 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,25 +48,14 @@ public class PostService {
     private final CommentRepository commentRepository;
     private final ReportRepository reportRepository;
     private final Storage storage;
+    private final EntityFinder entityFinder;
 
     @Value("${spring.cloud.gcp.storage.bucket}")
     private String bucketName;
 
-    private User getUserById(Long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
-    }
-
-    private Post getPostById(Long postId) {
-        return postRepository.findById(postId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_POST));
-    }
-
-    private Comment getCommentById(Long commentId) {
-        return commentRepository.findById(commentId).orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_COMMENT));
-    }
-
     @Transactional
     public Long registerPost(Long userId, PostRegisterRequestDto postRegisterRequestDto, List<MultipartFile> imageFiles) {
-        User user = getUserById(userId);
+        User user = entityFinder.getUserById(userId);
 
         Post post = postRepository.saveAndFlush(Post.builder()
                 .writer(user)
@@ -85,7 +74,7 @@ public class PostService {
 
     @Transactional
     private void uploadImages(Long postId, List<MultipartFile> imageFiles) {
-        Post post = getPostById(postId);
+        Post post = entityFinder.getPostById(postId);
 
         int idx = 0;
         for (MultipartFile file : imageFiles) {
@@ -114,8 +103,8 @@ public class PostService {
 
     @Transactional
     public PostDetailResponseDto getPostDetail(Long userId, Long postId) {
-        getUserById(userId);
-        Post post = getPostById(postId);
+        entityFinder.getUserById(userId);
+        Post post = entityFinder.getPostById(postId);
 
         List<String> postImageUrls = Optional.ofNullable(imageRepository.findUrlsByPost(post))
                 .orElse(Collections.emptyList());
@@ -128,7 +117,7 @@ public class PostService {
                         .nickname(comment.getWriter().getNickname())
                         .profileImageUrl(comment.getWriter().getProfileImage())
                         .content(comment.getContent())
-                        .createDate(TimeFormatter.timeFormat(comment.getCreateDate()))
+                        .createDate(TimeFormatter.format(comment.getCreateDate()))
                         .build())
                 .collect(Collectors.toList());
 
@@ -141,27 +130,38 @@ public class PostService {
                         .title(post.getTitle())
                         .content(post.getContent())
                         .type(post.getType())
-                        .createDate(TimeFormatter.timeFormat(post.getCreateDate()))
+                        .createDate(TimeFormatter.format(post.getCreateDate()))
                         .postImageUrls(postImageUrls)
                         .comments(comments)
                         .build();
+
+        post.incrementViewCount();
 
         return postDetailResponseDto;
     }
 
     @Transactional
     public List<PostListResponseDto> getPostList(Long userId, ETopic type, Integer pageIndex, Integer pageSize) {
-        getUserById(userId);
+        entityFinder.getUserById(userId);
 
         Pageable pageable = PageRequest.of(pageIndex, pageSize);
         Page<Post> postPage = postRepository.findByType(type, pageable);
 
+        // 1. 모든 게시물 ID 수집
+        List<Long> postIds = postPage.getContent().stream()
+                .map(Post::getId)
+                .collect(Collectors.toList());
+
+        // 2. 한 번의 쿼리로 모든 이미지 URL 조회
+        Map<Long, String> postImageUrls = imageRepository.findFirstImageUrlsByPostIdsRaw(postIds).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0], // post_id를 key로
+                        row -> (String) row[1] // url을 value로
+                ));
+
+        // 3. 정적 팩토리 메서드를 사용하여 DTO 생성
         List<PostListResponseDto> postListResponseDtos = postPage.getContent().stream()
-                .map(post -> {
-                    String postImageUrl = imageRepository.findUrlsByPostIdOrderByIdAsc(post.getId())
-                            .orElse(null);
-                    return PostListResponseDto.from(post, postImageUrl);
-                })
+                .map(post -> PostListResponseDto.from(post, postImageUrls.get(post.getId())))
                 .collect(Collectors.toList());
 
         return postListResponseDtos;
@@ -169,8 +169,8 @@ public class PostService {
 
     @Transactional
     public Long updatePost(Long userId, Long postId, PostRegisterRequestDto postRegisterRequestDto, List<MultipartFile> imageFiles) {
-        getUserById(userId);
-        Post post = getPostById(postId);
+        entityFinder.getUserById(userId);
+        Post post = entityFinder.getPostById(postId);
 
         Boolean isExistDbImage = imageRepository.existsByPost(post); // DB 이미지 존재 여부
 
@@ -198,8 +198,8 @@ public class PostService {
 
     @Transactional
     public Boolean deletePost(Long userId, Long postId) {
-        getUserById(userId);
-        Post post = getPostById(postId);
+        entityFinder.getUserById(userId);
+        Post post = entityFinder.getPostById(postId);
 
         try {
             // GCS 이미지 삭제
@@ -224,13 +224,15 @@ public class PostService {
             blobIdsToDelete.add(BlobId.of(bucketName, blobName));
         }
 
-        storage.delete(blobIdsToDelete);
+        if (!blobIdsToDelete.isEmpty()) {
+            storage.delete(blobIdsToDelete);
+        }
     }
 
     @Transactional
     public Boolean reportPost(Long userId, Long postId, EReason reason) {
-        User user = getUserById(userId);
-        Post post = getPostById(postId);
+        User user = entityFinder.getUserById(userId);
+        Post post = entityFinder.getPostById(postId);
 
         // 해당 게시글 중복 신고 확인
         boolean alreadyReported = reportRepository.existsByWriterAndPostAndType(user, post, EReportType.POST);
@@ -252,12 +254,13 @@ public class PostService {
 
     @Transactional
     public Boolean registerComment(Long userId, Long postId, String content) {
-        User user = getUserById(userId);
-        Post post = getPostById(postId);
+        User user = entityFinder.getUserById(userId);
+        Post post = entityFinder.getPostById(postId);
 
         try {
             commentRepository.save(Comment.builder()
                     .post(post)
+                    .type(ECommentType.POST)
                     .writer(user)
                     .content(content)
                     .build());
@@ -272,8 +275,8 @@ public class PostService {
 
     @Transactional
     public Boolean reportComment(Long userId, Long commentId, EReason reason) {
-        User user = getUserById(userId);
-        Comment comment = getCommentById(commentId);
+        User user = entityFinder.getUserById(userId);
+        Comment comment = entityFinder.getCommentById(commentId);
 
         // 해당 댓글 중복 신고 확인
         boolean alreadyReported = reportRepository.existsByWriterAndCommentAndType(user, comment, EReportType.COMMENT);
@@ -291,6 +294,14 @@ public class PostService {
         } catch (Exception e) {
             throw new CommonException(ErrorCode.POST_ERROR);
         }
+    }
+
+    public List<RecentPostResponseDto> getRecentPostList(Long userId) {
+        List<Post> recentPostList = postRepository.findRecentPostsByType();
+
+        return recentPostList.stream()
+                .map(RecentPostResponseDto::from)
+                .collect(Collectors.toList());
     }
 
 }

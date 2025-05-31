@@ -12,6 +12,8 @@ import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.service.AuthService;
 import com.example.withpeace.type.EProvider;
 import com.example.withpeace.util.HeaderUtil;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +30,8 @@ public class AuthController {
 
     private final AuthService authService;
 
-    //구글 로그인
+    @Operation(summary = "Google 로그인", description = "Google 클라이언트 ID를 이용하여 로그인합니다.", tags = ("Auth"),
+            security = { @SecurityRequirement(name = "Social Auth") })
     @PostMapping("/google")
     public ResponseDto<LoginResponseDto> loginUsingGOOGLE(final HttpServletRequest request) throws IOException, JwkException {
         final String accessToken = HeaderUtil.refineHeader(request, Constant.AUTHORIZATION_HEADER, Constant.BEARER_PREFIX).orElseThrow(() -> new CommonException(ErrorCode.SERVER_ERROR));
@@ -36,7 +39,8 @@ public class AuthController {
         return ResponseDto.ok(loginResponseDto);
     }
 
-    //애플 로그인
+    @Operation(summary = "Apple 로그인", description = "Apple 클라이언트 ID를 이용하여 로그인합니다.", tags = ("Auth"),
+            security = { @SecurityRequirement(name = "Social Auth") })
     @PostMapping("/apple")
     public ResponseDto<LoginResponseDto> loginUsingApple(final HttpServletRequest request) throws IOException, JwkException {
         final String accessToken = HeaderUtil.refineHeader(request, Constant.AUTHORIZATION_HEADER, Constant.BEARER_PREFIX).orElseThrow(() -> new CommonException(ErrorCode.SERVER_ERROR));
@@ -44,14 +48,15 @@ public class AuthController {
         return ResponseDto.ok(loginResponseDto);
     }
 
-    //최초 회원가입
+    @Operation(summary = "회원가입",
+            description = "소셜 로그인 후 최초 회원가입을 수행합니다. 닉네임과 프로필 이미지(선택)를 설정할 수 있습니다.", tags = {"Auth"})
     @PostMapping("/register")
     public ResponseDto<JwtTokenDto> register(@UserId Long userId, @ModelAttribute @Valid SocialRegisterRequestDto socialRegisterRequestDto,
                                             @RequestPart(value = "imageFile", required = false) MultipartFile imageFile) {
         return ResponseDto.ok(authService.register(userId, socialRegisterRequestDto, imageFile));
     }
 
-    //Refresh Token 으로 Access Token 재발급
+    @Operation(summary = "Access Token 재발급", description = "Refresh Token을 이용하여 새로운 액세스 토큰을 발급받습니다.", tags = {"Auth"})
     @PostMapping("/refresh")
     public ResponseDto<?> refreshAccessToken(@RequestHeader("Authorization") String refreshToken) {
         return ResponseDto.ok(authService.refreshAccessToken(refreshToken));

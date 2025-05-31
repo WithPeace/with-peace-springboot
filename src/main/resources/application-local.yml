@@ -9,8 +9,8 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/withpeace?useSSL=false&serverTimezone=Asia/Seoul&useLegacyDatetimeCode=false&allowPublicKeyRetrieval=true
-    username: root
-    password: 1234
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     hikari:
       pool-name: jpa-hikari-pool
       maximum-pool-size: 5
@@ -45,8 +45,8 @@ spring:
       client:
         registration:
           google:
-            client-id: "836722341563-tttjmd0bh8hf7ja01bpv73lq62knuqbk.apps.googleusercontent.com"
-            client-secret: "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"
+            client-id: ${OAUTH_CLIENT_ID}
+            client-secret: ${OAUTH_CLIENT_SECRET}
             redirect-uri: http://localhost:8080/login/oauth2/code/google
             scope:
               - email
@@ -58,6 +58,21 @@ spring:
           location: classpath:with-peace-801b6-89c6377f475e.json
         project-id: "with-peace-801b6"
         bucket: "cheong-ha-bucket"
+  # .env 파일 로드
+  config:
+    import: optional:file:config/.env[.properties]
+
+#logging:
+#  level:
+#    org.springframework.transaction: DEBUG
+#    org.springframework.orm.jpa: DEBUG
+logging:
+  level:
+    org.springframework.transaction: WARN
+    org.springframework.orm.jpa: WARN
+    org.hibernate.SQL: debug
+    org.hibernate.type.descriptor.sql: trace  # 파라미터까지 확인 가능
+
 
 client:
   provider:
@@ -70,8 +85,14 @@ client:
       token-uri: "https://oauth2.googleapis.com/token"
       user-info-uri: "https://www.googleapis.com/userinfo/v2/me"
 
+springdoc:
+  swagger-ui:
+    operations-sorter: method # HTTP 메소드 순으로 정렬 (DELETE, GET, PATCH, POST, PUT)
 
-jwt.secret: uefrfjr8ew9jfejwr9ejf8w3h4j98fj8e94fhorg9hn3owth48hqf384ohtgfu34oqh8w9th438r2j3490rfj2
+jwt.secret: ${JWT_SECRET}
 slack.webhook.url: https://hooks.slack.com/services/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
 
-youth-policy.api-key: 8209a6c285cde4d07010e0dd
+youth-policy.api-key: 7054b4c5-9db8-410a-8582-9ee5b55c1e59
+
+file:
+  regionCodeDataPath: "src/main/resources/data/LegalDongCode_List.txt"

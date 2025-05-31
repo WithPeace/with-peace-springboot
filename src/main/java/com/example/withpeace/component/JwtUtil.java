@@ -1,9 +1,8 @@
-package com.example.withpeace.util;
+package com.example.withpeace.component;
 
 
 import com.example.withpeace.constant.Constant;
 import com.example.withpeace.dto.JwtTokenDto;
-import com.example.withpeace.repository.UserRepository;
 import com.example.withpeace.type.ERole;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;

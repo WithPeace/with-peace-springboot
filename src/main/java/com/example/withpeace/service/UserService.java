@@ -2,18 +2,27 @@ package com.example.withpeace.service;
 
 
 import com.example.withpeace.domain.User;
+import com.example.withpeace.dto.response.UserPolicyFilterResponseDto;
 import com.example.withpeace.dto.response.UserProfileResponseDto;
 import com.example.withpeace.exception.CommonException;
 import com.example.withpeace.exception.ErrorCode;
 import com.example.withpeace.repository.UserRepository;
+import com.example.withpeace.type.EPolicyClassification;
+import com.example.withpeace.type.EPolicyRegion;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
-import jakarta.transaction.Transactional;
+import io.micrometer.common.util.StringUtils;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -144,5 +153,46 @@ public class UserService {
         return userRepository.existsByNickname(nickname);
     }
 
+    @Transactional
+    public void updateRegionAndClassification(Long userId, String region, String classification) {
+        // 사용자 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+
+        updateUserRegion(user, region); // 관심 지역 설정
+        updateUserClassification(user, classification); // 관심 분야 설정
+    }
+
+    // 사용자 관심 지역(region) 정보 업데이트 (입력값이 비어있으면 관심 지역 초기화)
+    public void updateUserRegion(User user, String region) {
+        if (StringUtils.isNotBlank(region)) { // null, 빈 문자열, 공백 문제열 제외
+            List<EPolicyRegion> regionList = Arrays.stream(region.split(","))
+                    .map(EPolicyRegion::fromEnglishName)
+                    .toList();
+            user.setRegions(regionList); // 관심 지역 설정
+        } else {
+            user.setRegions(Collections.emptyList()); // 빈 문자열일 경우 초기화
+        }
+    }
+
+    // 사용자 관심 분야(classification) 정보 업데이트 (입력값이 비어있으면 관심 분야 초기화)
+    public void updateUserClassification(User user, String classification) {
+        if(StringUtils.isNotBlank(classification)) {
+            List<EPolicyClassification> classificationList = Arrays.stream(classification.split(","))
+                    .map(EPolicyClassification::valueOf)
+                    .toList();
+            user.setClassifications(classificationList); // 관심 분야 설정
+        } else {
+            user.setClassifications(Collections.emptyList()); // 빈 문자열일 경우 초기화
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public UserPolicyFilterResponseDto getRegionAndClassification(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CommonException(ErrorCode.NOT_FOUND_USER));
+
+        return UserPolicyFilterResponseDto.from(user);
+    }
 
 }

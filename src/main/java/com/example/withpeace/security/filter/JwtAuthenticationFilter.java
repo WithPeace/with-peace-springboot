@@ -9,7 +9,7 @@ import com.example.withpeace.security.JwtAuthenticationToken;
 import com.example.withpeace.security.info.JwtUserInfo;
 import com.example.withpeace.type.ERole;
 import com.example.withpeace.util.HeaderUtil;
-import com.example.withpeace.util.JwtUtil;
+import com.example.withpeace.component.JwtUtil;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -64,8 +64,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        log.info(request.getRequestURI());
-        log.info(String.valueOf(Constant.NO_NEED_AUTH_URLS.contains(request.getRequestURI())));
+        if(!request.getRequestURI().startsWith("/actuator/prometheus")) {
+            log.info(request.getRequestURI());
+            log.info(String.valueOf(Constant.NO_NEED_AUTH_URLS.contains(request.getRequestURI())));
+        }
         return Constant.NO_NEED_AUTH_URLS.contains(request.getRequestURI())
                 || request.getRequestURI().startsWith("/guest");
     }

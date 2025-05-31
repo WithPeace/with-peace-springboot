@@ -22,7 +22,7 @@ public record PostListResponseDto(
                 post.getContent(),
                 post.getType(),
                 post.getCommentCount(),
-                TimeFormatter.timeFormat(post.getCreateDate()),
+                TimeFormatter.format(post.getCreateDate()),
                 postImageUrl
         );
     }
