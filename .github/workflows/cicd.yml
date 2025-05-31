@@ -30,13 +30,11 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-
       # gradle build
       - name: Build with Gradle
         run: |
           chmod +x ./gradlew
           ./gradlew build -x test
-
       # Docker build & push to prod
       - name: Docker build & push to prod
         if: contains(github.ref, 'dev')
@@ -44,7 +42,6 @@ jobs:
           docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_TOKEN}}
           docker build -t ${{secrets.DOCKER_REPOSITORY}} .
           docker push ${{secrets.DOCKER_REPOSITORY}}
-
       # Deploy to prod
       - name: Deploy to prod
         uses: appleboy/ssh-action@master
