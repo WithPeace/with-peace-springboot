@@ -63,6 +63,9 @@ dependencies {
     implementation 'javax.xml.bind:jaxb-api:2.3.1'
     // slack webhook
     implementation 'com.slack.api:slack-api-client:1.39.0'
+
+    // redis
+    implementation("org.springframework.boot:spring-boot-starter-data-redis:3.4.5")
 }
 
 tasks.named('test') {

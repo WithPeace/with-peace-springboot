@@ -61,6 +61,12 @@ spring:
   # .env 파일 로드
   config:
     import: optional:file:config/.env[.properties]
+  # Redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 500ms # Redis 명령 실행에 대한 타임아웃 (0.5초)
 
 #logging:
 #  level:
@@ -72,6 +78,7 @@ logging:
     org.springframework.orm.jpa: WARN
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql: trace  # 파라미터까지 확인 가능
+    io.lettuce.core.protocol.ConnectionWatchdog: ERROR
 
 
 client:
@@ -90,7 +97,7 @@ springdoc:
     operations-sorter: method # HTTP 메소드 순으로 정렬 (DELETE, GET, PATCH, POST, PUT)
 
 jwt.secret: ${JWT_SECRET}
-slack.webhook.url: https://hooks.slack.com/services/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
+slack.webhook.url: ${SLACK_WEBHOOK_URL}
 
 youth-policy.api-key: 7054b4c5-9db8-410a-8582-9ee5b55c1e59
 

@@ -4,7 +4,7 @@ name: CI/CD using github actions & docker
 # event trigger
 on:
   push :
-    branches : ["master","dev"]
+    branches : ["master","dev","staging"]
 permissions:
   contents: read
 
@@ -35,6 +35,15 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew build -x test
+
+      # Docker build & push to staging
+      - name: Docker build & push to staging
+        if: contains(github.ref, 'staging')
+        run: |
+          docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_TOKEN}}
+          docker build -t ${{secrets.DOCKER_REPOSITORY}}:staging .
+          docker push ${{secrets.DOCKER_REPOSITORY}}:staging
+
       # Docker build & push to prod
       - name: Docker build & push to prod
         if: contains(github.ref, 'dev')
@@ -42,7 +51,42 @@ jobs:
           docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_TOKEN}}
           docker build -t ${{secrets.DOCKER_REPOSITORY}} .
           docker push ${{secrets.DOCKER_REPOSITORY}}
-      # Deploy to prod
+
+      # Deploy to staging server
+      - name: Deploy to staging
+        if: contains(github.ref, 'staging')
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{secrets.STAGING_HOST}}
+          username: lpromotion00
+          key: ${{ secrets.STAGING_PRIVATE_KEY }}
+          envs: GITHUB_SHA
+          script: |
+            export DB_USERNAME=${{secrets.DB_USERNAME}}
+            export DB_PASSWORD=${{secrets.DB_PASSWORD}}
+            export JWT_SECRET=${{secrets.JWT_SECRET}}
+            export OAUTH_CLIENT_ID=${{secrets.OAUTH_CLIENT_ID}}
+            export OAUTH_CLIENT_SECRET=${{secrets.OAUTH_CLIENT_SECRET}}
+            
+            sudo docker ps
+            sudo docker stop springboot
+            sudo docker rm -f springboot
+            sudo docker pull ${{secrets.DOCKER_REPOSITORY}}:staging
+            
+            sudo docker run -d -p 8081:8080 --net=host --name springboot \
+            -v /mnt/data/LegalDongCode_List.txt:/app/data/LegalDongCode_List.txt \
+            -e TZ=Asia/Seoul \
+            -e SPRING_PROFILES_ACTIVE=staging \
+            -e DB_USERNAME=${DB_USERNAME} \
+            -e DB_PASSWORD=${DB_PASSWORD} \
+            -e JWT_SECRET=${JWT_SECRET} \
+            -e OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID} \
+            -e OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET} \
+            ${{secrets.DOCKER_REPOSITORY}}:staging
+            
+            sudo docker image prune -f
+
+      # Deploy to prod server
       - name: Deploy to prod
         uses: appleboy/ssh-action@master
         id: deploy-prod
@@ -69,6 +113,7 @@ jobs:
             sudo docker run -d -p 8080:8080 --net=host --name springboot \
             -v /mnt/data/LegalDongCode_List.txt:/app/data/LegalDongCode_List.txt \
             -e TZ=Asia/Seoul \
+            -e SPRING_PROFILES_ACTIVE=dev \ 
             -e DB_USERNAME=${DB_USERNAME} \
             -e DB_PASSWORD=${DB_PASSWORD} \
             -e JWT_SECRET=${JWT_SECRET} \
