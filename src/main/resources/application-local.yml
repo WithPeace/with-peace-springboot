@@ -61,6 +61,12 @@ spring:
   # .env 파일 로드
   config:
     import: optional:file:config/.env[.properties]
+  # Redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 500ms # Redis 명령 실행에 대한 타임아웃 (0.5초)
 
 #logging:
 #  level:
@@ -72,6 +78,7 @@ logging:
     org.springframework.orm.jpa: WARN
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql: trace  # 파라미터까지 확인 가능
+    io.lettuce.core.protocol.ConnectionWatchdog: ERROR
 
 
 client:
