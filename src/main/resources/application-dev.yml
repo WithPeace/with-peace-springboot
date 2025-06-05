@@ -99,7 +99,7 @@ springdoc:
     operations-sorter: method # HTTP 메소드 순으로 정렬 (DELETE, GET, PATCH, POST, PUT)
 
 jwt.secret: ${JWT_SECRET}
-slack.webhook.url: https://hooks.slack.com/services/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
+slack.webhook.url: ${SLACK_WEBHOOK_URL}
 
 youth-policy.api-key: 7054b4c5-9db8-410a-8582-9ee5b55c1e59
 
