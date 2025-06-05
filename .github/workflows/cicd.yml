@@ -30,7 +30,6 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-
       # gradle build
       - name: Build with Gradle
         run: |
@@ -53,7 +52,7 @@ jobs:
           docker build -t ${{secrets.DOCKER_REPOSITORY}} .
           docker push ${{secrets.DOCKER_REPOSITORY}}
 
-      # 3. Deploy to staging server
+      # Deploy to staging server
       - name: Deploy to staging
         if: contains(github.ref, 'staging')
         uses: appleboy/ssh-action@master
@@ -87,7 +86,7 @@ jobs:
             
             sudo docker image prune -f
 
-      # Deploy to prod
+      # Deploy to prod server
       - name: Deploy to prod
         uses: appleboy/ssh-action@master
         id: deploy-prod
