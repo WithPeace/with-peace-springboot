@@ -10,9 +10,9 @@ on:
       - completed # build.yml이 완료되었을 때 트리거
     branches:
       - prod # prod 브랜치에서 build.yml이 성공했을 때만 실행
-    push:
-      branches:
-        - staging # prod 브랜치에 직접 푸시될 때도 실행 (선택 사항, workflow_run 대신 사용 가능)
+  push:
+    branches:
+      - prod # prod 브랜치에 직접 푸시될 때도 실행 (선택 사항, workflow_run 대신 사용 가능)
 #  workflow_dispatch: # 선택 사항: 수동으로 워크플로를 실행할 수 있도록 하려면 주석 해제
 #   inputs:
 #     reason:
@@ -27,8 +27,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest # 배포를 실행할 GitHub 호스팅 러너
 
-    # 이 Job은 workflow_run 이벤트로 트리거되었고, build.yml이 staging 브랜치에서 success 상태일 때만 실행됩니다.
-    # 또는 push 이벤트로 staging 브랜치에 푸시될 때 실행됩니다.
+    # 이 Job은 workflow_run 이벤트로 트리거되었고, build.yml이 prod 브랜치에서 success 상태일 때만 실행됩니다.
+    # 또는 push 이벤트로 prod 브랜치에 푸시될 때 실행됩니다.
     if: |
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'prod') ||
       (github.event_name == 'push' && github.ref == 'refs/heads/prod')
@@ -60,7 +60,6 @@ jobs:
         with:
           host: ${{secrets.HOST}}
           username: ${{secrets.USERNAME}}
-          password: ${{secrets.SSH_PASSWORD}}
           key: ${{ secrets.PRIVATE_KEY }}
           port: 22 # SSH 포트 (기본값)
           # SSH 스크립트에서 필요한 환경 변수들을 envs 파라미터를 통해 주입
