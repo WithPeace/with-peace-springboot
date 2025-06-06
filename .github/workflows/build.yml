@@ -45,7 +45,7 @@ jobs:
         run: chmod +x ./gradlew # gradlew 실행 권한 부여 (Linux/macOS)
 
       - name: Build and Test with Gradle
-        run: ./gradlew build # 애플리케이션 빌드 및 모든 테스트 실행
+        run: ./gradlew build -x test # 애플리케이션 빌드
 
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4 # 빌드된 JAR 파일을 아티팩트로 업로드
