@@ -33,6 +33,8 @@ jobs:
         with:
           name: spring-app-jar # build.yml에서 업로드한 아티팩트 이름
           path: . # 현재 워크플로의 루트 디렉터리에 다운로드
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.TOKEN_GITHUB_ACTIONS }}
 
       - name: Prepare JAR for Docker Build # 다운로드된 JAR 파일을 Dockerfile에서 쉽게 참조하도록 준비
         run: mv spring-app-jar/build/libs/*.jar app.jar
