@@ -10,15 +10,6 @@ on:
       - completed # build.yml이 완료되었을 때 트리거
     branches:
       - prod # prod 브랜치에서 build.yml이 성공했을 때만 실행
-  push:
-    branches:
-      - prod # prod 브랜치에 직접 푸시될 때도 실행 (선택 사항, workflow_run 대신 사용 가능)
-#  workflow_dispatch: # 선택 사항: 수동으로 워크플로를 실행할 수 있도록 하려면 주석 해제
-#   inputs:
-#     reason:
-#       description: 'Reason for manual deployment'
-#       required: false
-#       default: 'Manual trigger'
 
 permissions:
   contents: read # 저장소 콘텐츠 읽기 권한
