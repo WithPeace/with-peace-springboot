@@ -37,7 +37,7 @@ jobs:
           github-token: ${{ secrets.TOKEN_GITHUB_ACTIONS }}
 
       - name: Prepare JAR for Docker Build # 다운로드된 JAR 파일을 Dockerfile에서 쉽게 참조하도록 준비
-        run: mv spring-app-jar/build/libs/*.jar app.jar
+        run: mv spring-app-jar/*.jar app.jar
 
       - name: Docker Login # Docker Hub에 인증
         run: docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_TOKEN}}
