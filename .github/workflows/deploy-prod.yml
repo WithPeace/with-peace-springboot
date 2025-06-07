@@ -55,21 +55,22 @@ jobs:
           username: ${{secrets.USERNAME}}
           key: ${{ secrets.PRIVATE_KEY }}
           port: 22 # SSH 포트 (기본값)
-          # SSH 스크립트에서 필요한 환경 변수들을 envs 파라미터를 통해 주입
-          envs: >
-            DOCKER_REPOSITORY=${{ secrets.DOCKER_REPOSITORY }},
-            DOCKER_TAG=prod,
-            SPRING_PROFILES_ACTIVE=prod,
-            DB_USERNAME=${{ secrets.DB_USERNAME }},
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }},
-            JWT_SECRET=${{ secrets.JWT_SECRET }},
-            OAUTH_CLIENT_ID=${{ secrets.OAUTH_CLIENT_ID }},
-            OAUTH_CLIENT_SECRET=${{ secrets.OAUTH_CLIENT_SECRET }},
-            DOCKER_CONTAINER_PORT_MAP=8080:8080,
-            APP_DATA_PATH=/mnt/data/LegalDongCode_List.txt:/app/data/LegalDongCode_List.txt # 데이터 볼륨 경로 (법정동코드 파일)
+          envs: GITHUB_SHA
           script: |
             # 이 스크립트는 Production 서버에서 실행됩니다.
             echo "Deploying to Production Server..."
+            
+            # 환경 변수 설정
+            export DOCKER_REPOSITORY=${{ secrets.DOCKER_REPOSITORY }}
+            export DOCKER_TAG=prod
+            export SPRING_PROFILES_ACTIVE=prod
+            export DB_USERNAME=${{ secrets.DB_USERNAME }}
+            export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            export JWT_SECRET=${{ secrets.JWT_SECRET }}
+            export OAUTH_CLIENT_ID=${{ secrets.OAUTH_CLIENT_ID }}
+            export OAUTH_CLIENT_SECRET=${{ secrets.OAUTH_CLIENT_SECRET }}
+            export DOCKER_CONTAINER_PORT_MAP=8080:8080
+            export APP_DATA_PATH=/mnt/data/LegalDongCode_List.txt:/app/data/LegalDongCode_List.txt
             
             # 기존 컨테이너 중지 및 삭제 (오류 발생 시 무시하도록 '|| true' 추가)
             sudo docker stop springboot || true
