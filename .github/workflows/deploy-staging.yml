@@ -36,8 +36,11 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.TOKEN_GITHUB_ACTIONS }}
 
+      - name: Display structure of downloaded files # 다운로드한 JAR 아티팩트의 디렉터리 구조 확인
+        run: ls -R
+
       - name: Prepare JAR for Docker Build # 다운로드된 JAR 파일을 Dockerfile에서 쉽게 참조하도록 준비
-        run: mv build/libs/*.jar app.jar
+        run: mv build/libs/*.jar app.jar # "Display structure of downloaded files" 결과에 따라 변경 예정
 
       - name: Docker Login # Docker Hub에 인증
         run: docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_TOKEN}}
