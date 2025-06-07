@@ -8,6 +8,5 @@ RUN apk add --no-cache tzdata && \
     echo "Asia/Seoul" > /etc/timezone
 
 WORKDIR /app
-ARG JAR_FILE=./build/libs
-COPY ${JAR_FILE}/*.jar app.jar
+COPY app.jar app.jar
 ENTRYPOINT ["java", "-jar", "./app.jar", "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-local}"]
