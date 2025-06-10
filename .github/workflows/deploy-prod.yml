@@ -44,13 +44,34 @@ jobs:
       - name: Decode GCS service key
         run: |
           mkdir -p src/main/resources
-          echo "${{ secrets.GCS_SERVICE_KEY_BASE64 }}" | openssl base64 -d -A > src/main/resources/gcs-service-key.json
+          echo "${{ secrets.GCS_SERVICE_KEY_BASE64 }}" | openssl base64 -d -A > src/main/resources/gcs-service-key.json || echo "GCS 키 디코딩 실패"
+          
+          # 파일 생성 확인
+          echo "생성된 파일 경로:"
+          ls -al src/main/resources/
+          
+          # 파일 크기 확인
+          echo "파일 크기:"
+          wc -c src/main/resources/gcs-service-key.json
         shell: bash
 
       # GitHub Secrets에 등록된 Firebase 서비스 계정 키(base64 인코딩)를 디코딩하여 JSON 파일로 저장
       - name: Decode Firebase service key
         run: |
-          echo "${{ secrets.FIREBASE_SERVICE_KEY_BASE64 }}" | openssl base64 -d -A > src/main/resources/firebase-service-key.json
+          mkdir -p src/main/resources  # Firebase도 동일한 경로 사용
+          echo "${{ secrets.FIREBASE_SERVICE_KEY_BASE64 }}" | openssl base64 -d -A > src/main/resources/firebase-service-key.json || echo "Firebase 키 디코딩 실패"
+          
+          # 파일 생성 확인
+          echo "생성된 파일 경로:"
+          ls -al src/main/resources/
+          
+          # 파일 내용 일부 출력 (첫 3줄)
+          echo "파일 내용 샘플:"
+          head -n 3 src/main/resources/firebase-service-key.json
+          
+          # 파일 크기 확인
+          echo "파일 크기:"
+          wc -c src/main/resources/firebase-service-key.json
         shell: bash
 
       - name: Docker Login # Docker Hub에 인증
