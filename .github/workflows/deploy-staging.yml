@@ -1,0 +1,111 @@
+# .github/workflows/deploy-staging.yml
+name: CD - Deploy to Staging
+
+# 이 워크플로는 build.yml 워크플로가 성공적으로 완료되었을 때 실행됩니다.
+# 또한, staging 브랜치에 직접 푸시될 때도 실행됩니다.
+on:
+  workflow_run:
+    workflows: ["CI - Build and Test Spring Boot App"] # build.yml의 'name' 필드와 일치
+    types:
+      - completed # build.yml이 완료되었을 때 트리거
+    branches:
+      - staging # staging 브랜치에서 build.yml이 성공했을 때만 실행
+
+permissions:
+  contents: read # 저장소 콘텐츠 읽기 권한
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # 배포를 실행할 GitHub 호스팅 러너
+
+    # 이 Job은 workflow_run 이벤트로 트리거되었고, build.yml이 staging 브랜치에서 success 상태일 때만 실행됩니다.
+    # 또는 push 이벤트로 staging 브랜치에 푸시될 때 실행됩니다.
+    if: |
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'staging') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/staging')
+
+    steps:
+      - name: Checkout Repository # Dockerfile, 배포 스크립트 등의 위해 리포지토리 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Download JAP artifact # build.yml에서 업로드한 JAR 아티팩트 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          name: spring-app-jar # build.yml에서 업로드한 아티팩트 이름
+          path: . # 현재 워크플로의 루트 디렉터리에 다운로드
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.TOKEN_GITHUB_ACTIONS }}
+
+      - name: Prepare JAR for Docker Build # 다운로드된 JAR 파일을 Dockerfile에서 쉽게 참조하도록 준비
+        run: mv *.jar app.jar
+
+      # GitHub Secrets에 등록된 GCS 서비스 계정 키(base64 인코딩)를 디코딩하여 JSON 파일로 저장
+      # application-*.yml에 명시된 credentials.location 경로에 맞춰 저장해야 정상적으로 동작
+      - name: Decode GCS service key
+        run: |
+          mkdir -p src/main/resources
+          echo "${{ secrets.GCS_SERVICE_KEY_BASE64 }}" | openssl base64 -d -A > src/main/resources/gcs-service-key.json
+        shell: bash
+
+      # GitHub Secrets에 등록된 Firebase 서비스 계정 키(base64 인코딩)를 디코딩하여 JSON 파일로 저장
+      - name: Decode Firebase service key
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_KEY_BASE64 }}" | openssl base64 -d -A > src/main/resources/firebase-service-key.json
+        shell: bash
+
+      - name: Docker Login # Docker Hub에 인증
+        run: docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_TOKEN}}
+
+      - name: Build Docker Image for Staging # Docker 이미지 빌드 (staging 태그 적용)
+        run: docker build -t ${{secrets.DOCKER_REPOSITORY}}:staging .
+
+      - name: Push Docker Image to Registry # 빌드된 Docker 이미지 푸시
+        run: docker push ${{secrets.DOCKER_REPOSITORY}}:staging
+
+      - name: Deploy to Staging Server # SSH 접속 및 배포 스크립트 실행
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{secrets.STAGING_HOST}}
+          username: ${{secrets.STAGING_USERNAME}}
+          key: ${{ secrets.STAGING_PRIVATE_KEY }}
+          port: 22 # SSH 포트 (기본값)
+          envs: GITHUB_SHA
+          script: |
+            # 이 스크립트는 Staging 서버에서 실행됩니다.
+            echo "Deploying to Staging Server..."
+            
+            # 환경 변수 설정
+            export DOCKER_REPOSITORY=${{ secrets.DOCKER_REPOSITORY }},
+            export DOCKER_TAG=staging,
+            export SPRING_PROFILES_ACTIVE=staging,
+            export DB_USERNAME=${{ secrets.DB_USERNAME }},
+            export DB_PASSWORD=${{ secrets.DB_PASSWORD }},
+            export JWT_SECRET=${{ secrets.JWT_SECRET }},
+            export OAUTH_CLIENT_ID=${{ secrets.OAUTH_CLIENT_ID }},
+            export OAUTH_CLIENT_SECRET=${{ secrets.OAUTH_CLIENT_SECRET }},
+            export DOCKER_CONTAINER_PORT_MAP=8081:8080, # 기존 워크플로의 포트 매핑
+            export APP_DATA_PATH=/mnt/data/LegalDongCode_List.txt:/app/data/LegalDongCode_List.txt # 데이터 볼륨 경로 (법정동코드 파일)
+            
+            # 기존 컨테이너 중지 및 삭제 (오류 발생 시 무시하도록 '|| true' 추가)
+            sudo docker stop springboot || true
+            sudo docker rm -f springboot || true
+            
+            echo "Pulling Docker image: $DOCKER_REPOSITORY:$DOCKER_TAG"
+            sudo docker pull $DOCKER_REPOSITORY:$DOCKER_TAG
+            
+            echo "Running new Docker container..."
+            sudo docker run -d -p DOCKER_CONTAINER_PORT_MAP --net=host --name springboot \
+            -v $APP_DATA_PATH \
+            -e TZ=Asia/Seoul \
+            -e SPRING_PROFILES_ACTIVE=$SPRING_PROFILES_ACTIVE \
+            -e DB_USERNAME=$DB_USERNAME \
+            -e DB_PASSWORD=$DB_PASSWORD \
+            -e JWT_SECRET=$JWT_SECRET \
+            -e OAUTH_CLIENT_ID=$OAUTH_CLIENT_ID \
+            -e OAUTH_CLIENT_SECRET=$OAUTH_CLIENT_SECRET \
+            $DOCKER_REPOSITORY:$DOCKER_TAG
+            
+            echo "Pruning old Docker images..."
+            sudo docker image prune -f
+            
+            echo "Deployemnt to Staging completed."
