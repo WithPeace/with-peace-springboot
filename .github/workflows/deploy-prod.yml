@@ -69,6 +69,7 @@ jobs:
             export JWT_SECRET=${{ secrets.JWT_SECRET }}
             export OAUTH_CLIENT_ID=${{ secrets.OAUTH_CLIENT_ID }}
             export OAUTH_CLIENT_SECRET=${{ secrets.OAUTH_CLIENT_SECRET }}
+            export SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL }}
             export DOCKER_CONTAINER_PORT_MAP=8080:8080
             export APP_DATA_PATH=/mnt/data/LegalDongCode_List.txt:/app/data/LegalDongCode_List.txt
             
@@ -89,6 +90,7 @@ jobs:
             -e JWT_SECRET=$JWT_SECRET \
             -e OAUTH_CLIENT_ID=$OAUTH_CLIENT_ID \
             -e OAUTH_CLIENT_SECRET=$OAUTH_CLIENT_SECRET \
+            -e SLACK_WEBHOOK_URL=$SLACK_WEBHOOK_URL \
             $DOCKER_REPOSITORY:$DOCKER_TAG
             
             echo "Pruning old Docker images..."
