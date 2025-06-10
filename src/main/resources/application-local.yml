@@ -55,7 +55,7 @@ spring:
     gcp:
       storage:
         credentials:
-          location: classpath:with-peace-801b6-89c6377f475e.json
+          location: classpath:gcs-service-key.json
         project-id: "with-peace-801b6"
         bucket: "cheong-ha-bucket"
   # .env 파일 로드

@@ -41,3 +41,9 @@ out/
 
 ### 법정동코드 데이터 파일 ###
 resources/data/LegalDongCode_List.txt
+
+# GCS Service Account Key
+src/main/resources/gcs-service-key.json
+
+# Firebase Service Account Key
+src/main/resources/firebase-service-key.json

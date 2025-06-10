@@ -48,7 +48,7 @@ com.example.withpeace           // 프로젝트의 루트 패키지
 └── resources                         // 설정 파일 및 기타 리소스
     ├── application.yml               // 기본 환경 설정
     ├── application-local.yml         // 로컬 환경 설정
-    ├── application-dev.yml           // 개발 환경 설정
+    ├── application-prod.yml           // 운영 환경 설정
     └── application-staging-test.yml  // 스테이징 환경 설정
 
 // 기타 주요 파일 및 디렉토리
