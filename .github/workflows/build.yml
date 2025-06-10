@@ -1,0 +1,55 @@
+# .github/workflows/build.yml
+name: CI - Build and Test Spring Boot App
+
+# event trigger
+on:
+  push:
+    branches:
+      - main
+      - prod
+      - staging
+  pull_request:
+    branches:
+      - main
+      - prod
+      - staging
+
+permissions:
+  contents: read # 저장소 콘텐츠를 읽는 권한만 부여
+
+jobs:
+  build:
+    runs-on: ubuntu-latest # 워크플로를 실행할 환경 (Github 호스팅 러너)
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4 # 저장소 코드 체크아웃
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4 # JDK 17 tjfwjd
+        with:
+          java-version: '17'
+          distribution: 'temurin' # Adoptium Temurin 배포판 사용
+
+      - name: Configure Gradle Caching
+        uses: actions/cache@v4 # Gradle 캐시 설정으로 빌드 시간 단축
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew # gradlew 실행 권한 부여 (Linux/macOS)
+
+      - name: Build and Test with Gradle
+        run: ./gradlew build -x test # 애플리케이션 빌드
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4 # 빌드된 JAR 파일을 아티팩트로 업로드
+        with:
+          name: spring-app-jar # 아티팩트 이름 지정
+          path: build/libs/*.jar # 빌드된 JAR 파일의 경로
+          retention-days: 5 # 아티팩트 보관 기간 (기본 90일)
