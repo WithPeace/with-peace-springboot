@@ -39,6 +39,20 @@ jobs:
       - name: Prepare JAR for Docker Build # 다운로드된 JAR 파일을 Dockerfile에서 쉽게 참조하도록 준비
         run: mv *.jar app.jar
 
+      # GitHub Secrets에 등록된 GCS 서비스 계정 키(base64 인코딩)를 디코딩하여 JSON 파일로 저장
+      # application-*.yml에 명시된 credentials.location 경로에 맞춰 저장해야 정상적으로 동작
+      - name: Decode GCS service key
+        run: |
+          mkdir -p src/main/resources
+          echo "${{ secrets.GCS_SERVICE_KEY_BASE64 }}" | openssl base64 -d -A > src/main/resources/gcs-service-key.json
+        shell: bash
+
+      # GitHub Secrets에 등록된 Firebase 서비스 계정 키(base64 인코딩)를 디코딩하여 JSON 파일로 저장
+      - name: Decode Firebase service key
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_KEY_BASE64 }}" | openssl base64 -d -A > src/main/resources/firebase-service-key.json
+        shell: bash
+
       - name: Docker Login # Docker Hub에 인증
         run: docker login -u ${{secrets.DOCKER_USER}} -p ${{secrets.DOCKER_TOKEN}}
 

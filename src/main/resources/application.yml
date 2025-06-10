@@ -6,7 +6,7 @@ spring:
     active: local
     group:
         local: local
-        dev : dev
+        prod : prod
         staging : staging
         debug: debug
 
