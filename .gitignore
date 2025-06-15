@@ -40,7 +40,7 @@ out/
 .env
 
 ### 법정동코드 데이터 파일 ###
-resources/data/LegalDongCode_List.txt
+src/main/resources/data/LegalDongCode_List.txt
 
 # GCS Service Account Key
 src/main/resources/gcs-service-key.json
