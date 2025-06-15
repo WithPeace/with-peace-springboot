@@ -49,7 +49,7 @@ com.example.withpeace           // 프로젝트의 루트 패키지
     ├── application.yml               // 기본 환경 설정
     ├── application-local.yml         // 로컬 환경 설정
     ├── application-prod.yml           // 운영 환경 설정
-    └── application-staging-test.yml  // 스테이징 환경 설정
+    └── application-staging.yml  // 스테이징 환경 설정
 
 // 기타 주요 파일 및 디렉토리
 ├── build.gradle              // Gradle 빌드 설정 파일
