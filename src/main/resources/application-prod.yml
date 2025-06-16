@@ -98,6 +98,9 @@ springdoc:
   swagger-ui:
     operations-sorter: method # HTTP 메소드 순으로 정렬 (DELETE, GET, PATCH, POST, PUT)
 
+swagger:
+  server-url: https://cheongha.xyz  # 운영 서버 URL 설정
+
 jwt.secret: ${JWT_SECRET}
 slack.webhook.url: ${SLACK_WEBHOOK_URL}
 
