@@ -4,6 +4,7 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.tags.Tag;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import io.swagger.v3.oas.models.Components;
@@ -14,8 +15,13 @@ import java.util.Arrays;
 
 @Configuration
 public class SwaggerConfig {
+
+    @Value("${swagger.server-url}")
+    private String serverUrl;
+
     @Bean
     public OpenAPI openAPI() {
+        Server server = new Server().url(serverUrl); // 환경별 URL 반영
 
         // 소셜 로그인용 SecurityScheme
         SecurityScheme socialAuthScheme = new SecurityScheme()
@@ -37,15 +43,13 @@ public class SwaggerConfig {
         SecurityRequirement defaultRequirement = new SecurityRequirement()
                 .addList("Access Token");
 
-        Server prodServer = new Server().url("https://cheongha.site"); // 운영 서버 URL
-
         return new OpenAPI()
                 .info(apiInfo())
                 .components(new Components()
                         .addSecuritySchemes("Social Auth", socialAuthScheme)
                         .addSecuritySchemes("Access Token", accessTokenScheme))
                 .addSecurityItem(defaultRequirement) // 전역 설정으로 Access Token 사용
-                .addServersItem(prodServer) // 운영 서버 URL
+                .addServersItem(server)
 
                 .tags(Arrays.asList(
                         new Tag().name("Auth").description("인증 및 회원 관리 API"),
