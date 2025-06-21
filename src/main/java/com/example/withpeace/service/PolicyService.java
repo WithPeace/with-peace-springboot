@@ -51,6 +51,8 @@ public class PolicyService {
     @Value("${youth-policy.api-key}")
     private String apiKeyNm;
 
+    private static final int MAX_RECOMMENDATION_COUNT = 6;
+
     private final ApplicationEventPublisher applicationEventPublisher;
     private final PolicyRepository policyRepository;
     private final UserRepository userRepository;
@@ -327,7 +329,7 @@ public class PolicyService {
         entityFinder.getPolicyById(policyId); // 정책 조회
 
         try {
-            // 정책 찜하기 히제 (존재할 경우에만 삭제)
+            // 정책 찜하기 해제 (존재할 경우에만 삭제)
             FavoritePolicy favoritePolicy = favoritePolicyRepository.findByUserIdAndPolicyId(userId, policyId);
             if(favoritePolicy != null) favoritePolicyRepository.delete(favoritePolicy);
 
@@ -340,64 +342,59 @@ public class PolicyService {
         }
     }
 
+    /**
+     * 맞춤 정책 추천 API
+     * - 사용자 상호작용 데이터를 기반으로 추천 정책을 계산
+     * - 사용자 설정 지역/분야 필터를 적용하여 정책을 필터링
+     * - 부족한 추천 개수는 핫한 정책으로 보완
+     */
     @Transactional(readOnly = true)
     public List<PolicyListResponseDto> getRecommendationPolicyList(Long userId) {
         User user = entityFinder.getUserById(userId); // 사용자 조회
 
-        // 사용자의 관심 지역 및 분야 필터링 목록
-        List<EPolicyRegion> regionList = user.getRegions(); // 지역 필터링 리스트
-        List<EPolicyClassification> classificationList = user.getClassifications(); // 정책분야 필터링 리스트
-
-        // 사용자 상호작용(조회, 찜하기) 기반 정책 가중치 계산
-        Map<String, Integer> policyWeights = calculatePolicyWeightByInteraction(user);
-
-        List<PolicyListResponseDto> recommendationList = new ArrayList<>();
-        if (!policyWeights.isEmpty()) {
-            // 상호작용 가중치 높은 순으로 추천 정책 ID 추출
-            List<String> recommendedPolicyIds = policyWeights.entrySet().stream()
-                    .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-                    .map(Map.Entry::getKey)
-                    .toList();
-
-            // ID 목록으로 정책 한 번에 조회
-            List<Policy> allRecommendedPolicies = policyRepository.findAllById(recommendedPolicyIds);
-
-            // 필터 만족하는 정책만 추출
-            List<Policy> filteredRecommendedPolicies = allRecommendedPolicies.stream()
-                    .filter(policy -> matchesUserPreferenceFilters(policy, regionList, classificationList))
-                    .limit(6)
-                    .toList();
-
-            // 사용자가 찜한 정책 ID 목록 조회
-            Set<String> favoritePolicyIds = getFavoritePolicyIdsFromEntities(userId, filteredRecommendedPolicies);
-
-            // DTO 변환
-            recommendationList = filteredRecommendedPolicies.stream()
-                    .map(policy -> PolicyListResponseDto.from(policy, favoritePolicyIds.contains(policy.getId())))
-                    .collect(Collectors.toList());
-        }
-
-        // 정책이 6개 미만이면 "핫한 정책"으로 부족한 수 채움
-        if (recommendationList.size() < 6) {
-            Set<String> existingPolicyIds = recommendationList.stream()
-                    .map(PolicyListResponseDto::id)
-                    .collect(Collectors.toSet());
-
-            int needed = 6 - recommendationList.size();
-            List<PolicyListResponseDto> hotPolicyList = getHotPolicyList(user, regionList, classificationList, needed * 2).stream() // 중복 제거 고려하여 필요수 x 2
-                    .filter(policy -> !existingPolicyIds.contains(policy.id())) // 중복 제거
-                    .limit(6 - recommendationList.size()) // 부족한 수 만큼 제한
-                    .toList();
-
-            // 추천 리스트 + 핫한 정책 리스트
-            recommendationList = Stream.concat(recommendationList.stream(), hotPolicyList.stream())
-                    .collect(Collectors.toList());
-        }
+        // 사용자의 관심 지역 및 분야 필터 목록
+        List<EPolicyRegion> regionList = user.getRegions(); // 지역 필터 리스트
+        List<EPolicyClassification> classificationList = user.getClassifications(); // 정책분야 필터 리스트
+        
+        // 사용자 상호작용(조회, 찜하기) 기반 맞춤 정책 조회
+        List<PolicyListResponseDto> recommendationList = getInteractionBasedRecommendations(user, regionList, classificationList);
+        
+        // 부족한 추천 정책 개수만큼 핫한 정책으로 보완
+        fillWithHotPolicies(user, regionList, classificationList, recommendationList);
 
         return recommendationList;
     }
 
-    // 사용자 상호작용 데이터 기반 가중치 계산
+    /** 사용자 상호작용(조회, 찜하기) 기반 맞춤 정책 조회 **/
+    private List<PolicyListResponseDto> getInteractionBasedRecommendations(User user,
+                                                                           List<EPolicyRegion> regionList,
+                                                                           List<EPolicyClassification> classificationList) {
+        // 사용자 상호작용 데이터 기반 가중치 계산
+        Map<String, Integer> policyWeights = calculatePolicyWeightByInteraction(user);
+        if (policyWeights.isEmpty()) return new ArrayList<>();
+        
+        // 상호작용 가중치 높은 순으로 추천 정책 ID 추출
+        List<String> recommendedPolicyIds = policyWeights.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .map(Map.Entry::getKey)
+                .toList();
+
+        List<Policy> filteredRecommendedPolicies = policyRepository.findFilteredPoliciesByIdIn(
+                recommendedPolicyIds,
+                regionList, regionList.size(),
+                classificationList, classificationList.size()
+        ).stream().limit(MAX_RECOMMENDATION_COUNT).toList();
+
+        // 사용자가 찜한 정책 ID 목록 조회
+        Set<String> favoritePolicyIds = getFavoritePolicyIdsFromEntities(user.getId(), filteredRecommendedPolicies);
+
+        // DTO 변환
+        return filteredRecommendedPolicies.stream()
+                .map(policy -> PolicyListResponseDto.from(policy, favoritePolicyIds.contains(policy.getId())))
+                .collect(Collectors.toList());
+    }
+
+    /** 사용자 상호작용 데이터 기반 가중치 계산 **/
     private Map<String, Integer> calculatePolicyWeightByInteraction(User user) {
         // 사용자의 모든 상호작용 기록을 최신순으로 조회 (조회 & 찜 포함)
         List<UserInteraction> interactions = userInteractionRepository.findAllByUserOrderByActionTimeDesc(user);
@@ -408,12 +405,16 @@ public class PolicyService {
             EActionType actionType = interaction.getActionType();
             LocalDateTime actionTime = interaction.getActionTime();
 
-            int weight = policyWeights.getOrDefault(policyId, 0); // 누적된 가중치 가져옴
-            if(actionType == EActionType.VIEW) { // 조회 -> 가중치 1
-                weight += 1;
-            } else if(actionType == EActionType.FAVORITE) { // 찜하기 -> 가중치 3
-                weight += 3;
+            // 해당 정책의 현재 가중치 가져오기
+            // 기존 가중치 없으면 0부터 시작
+            int weight = policyWeights.getOrDefault(policyId, 0);
+
+            // 상호작용 타입별 가중치 추가
+            switch (actionType) {
+                case VIEW -> weight += 1; // 조회 -> +1점
+                case FAVORITE -> weight +=3; // 찜하기 -> +3점
             }
+
             // 최근 1주일 내 상호작용일 경우 가중치 1 추가
             if(actionTime.isAfter(LocalDateTime.now().minusWeeks(1))) {
                 weight += 1;
@@ -425,38 +426,59 @@ public class PolicyService {
         return policyWeights;
     }
 
-    // 정책이 지역 & 분야 필터 조건을 만족하는지 확인
-    private boolean matchesUserPreferenceFilters(Policy policy, List<EPolicyRegion> regionList, List<EPolicyClassification> classificationList) {
-        // regionList가 비어있지 않다면 모든 지역을 만족해야함
-        boolean regionMatched = regionList.isEmpty() ||
-                policy.getRegion().stream().anyMatch(regionList::contains);
+    /** 부족한 추천 정책 개수만큼 핫한 정책으로 보완 **/
+    private void fillWithHotPolicies(User user,
+                                     List<EPolicyRegion> regionList,
+                                     List<EPolicyClassification> classificationList,
+                                     List<PolicyListResponseDto> recommendationList) {
+        // 최대 개수에서 현재 추천된 개수를 뺀 부족한 개수 계산
+        int needed = MAX_RECOMMENDATION_COUNT - recommendationList.size();
+        if (needed <= 0) return;
 
-        boolean classificationMatched = classificationList.isEmpty() ||
-                classificationList.contains(policy.getClassification());
+        // 이미 추천된 정책 ID들 (중복 방지용)
+        Set<String> existingPolicyIds = recommendationList.stream()
+                .map(PolicyListResponseDto::id)
+                .collect(Collectors.toSet());
 
-        return regionMatched && classificationMatched;
+        // 필터 적용된 핫한 정책 → 전체 핫한 정책 순서로 조회
+        List<PolicyListResponseDto> hotPolicyCandidates = Stream.of(
+                        // 1차: 지역 및 분야 필터가 있는 경우 필터 적용된 핫한 정책 조회
+                        (!regionList.isEmpty() || !classificationList.isEmpty())
+                                ? getHotPolicyList(user, regionList, classificationList, needed * 3)
+                                : List.<PolicyListResponseDto>of(),
+                        // 2차: 전체 핫한 정책으로 보완
+                        getHotPolicyList(user, List.of(), List.of(), needed * 3)
+                )
+                .flatMap(List::stream)
+                .filter(dto -> !existingPolicyIds.contains(dto.id())) // 기존 상호작용 기반 추천과 핫한 정책 간 중복 제거
+                .distinct() // 필터 적용 핫한 정책과 전체 핫한 정책 간 중복 제거 (1차/2차)
+                .limit(needed) // 부족한 개수만큼 선택
+                .toList();
+
+        recommendationList.addAll(hotPolicyCandidates);
     }
 
-    // 핫한 정책 조회 및 필터링
-    public List<PolicyListResponseDto> getHotPolicyList(User user, List<EPolicyRegion> regionList,
-                                                         List<EPolicyClassification> classificationList, int count) {
+    /** 핫한 정책 조회 및 필터링 **/
+    public List<PolicyListResponseDto> getHotPolicyList(User user,
+                                                        List<EPolicyRegion> regionList,
+                                                         List<EPolicyClassification> classificationList,
+                                                        int count) {
         List<Policy> hotPolicies;
-
         // 필터 조건에 따라 핫한 정책 조회
-        if (regionList != null && classificationList != null) { // 지역 필터링 O & 정책분야 필터링 O
+        if (!regionList.isEmpty() && !classificationList.isEmpty()) { // 지역 필터 O & 정책분야 필터 O
             hotPolicies = policyRepository.findTopHotPoliciesByRegionsAndClassifications(regionList, classificationList, count);
-        } else if (regionList != null) { // 지역 필터링 O & 정책분야 필터링 X
+        } else if (!regionList.isEmpty()) { // 지역 필터 O & 정책분야 필터 X
             hotPolicies = policyRepository.findTopHotPoliciesByRegions(regionList, count);
-        } else if (classificationList != null) { // 지역 필터링 X & 정책분야 필터링 O
+        } else if (!classificationList.isEmpty()) { // 지역 필터 X & 정책분야 필터 O
             hotPolicies = policyRepository.findTopHotPoliciesByClassifications(classificationList, count);
-        } else {  // 지역 필터링 X & 정책분야 필터링 X
+        } else {  // 지역 필터 X & 정책분야 필터 X
             hotPolicies = policyRepository.findTopHotPolicies(count);
         }
 
         // 사용자 찜한 정책 ID 조회
         Set<String> favoritePolicyIds = getFavoritePolicyIdsFromEntities(user.getId(), hotPolicies);
 
-        // DTO 변환
+        // Policy 엔티티를 DTO로 변환하여 반환
         return hotPolicies.stream()
                 .map(policy -> PolicyListResponseDto.from(policy, favoritePolicyIds.contains(policy.getId())))
                 .toList();
@@ -515,7 +537,7 @@ public class PolicyService {
 
         // 2. 캐시 미스 -> DB에서 핫한 정책 조회
         // 조회수 + 찜수 기준 상위 6개의 정책만 조회
-        List<Policy> hotPolicies = policyRepository.findTopHotPolicies(6);
+        List<Policy> hotPolicies = policyRepository.findTopHotPolicies(MAX_RECOMMENDATION_COUNT);
         // Lazy 필드 초기화 (native query + DTO 에서 사용 시 필요)
         hotPolicies.forEach(policy -> Hibernate.initialize(policy.getRegion()));
         // 사용자 찜한 정책 ID 조회
