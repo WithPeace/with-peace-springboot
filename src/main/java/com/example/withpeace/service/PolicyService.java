@@ -162,7 +162,6 @@ public class PolicyService {
                     .stream().collect(Collectors.toMap(Policy::getId, Function.identity()));
 
             List<Policy> toSave = new ArrayList<>();
-            List<Policy> toUpdate = new ArrayList<>();
 
             // 신규 데이터 저장 & 기존 데이터 업데이트
             for (int i=0; i<newPolicies.size(); i++) {
