@@ -172,13 +172,11 @@ public class PolicyService {
                 Policy existingPolicy = existingPolicyMap.get(newPolicy.getId());
 
                 if (existingPolicy == null) {
-                    toSave.add(newPolicy);
+                    toSave.add(newPolicy); // INSERT 대상
                 } else {
                     // 기존 데이터가 존재하는 경우 내용 비교 후 업데이트 수행
-                    boolean isUpdated = existingPolicy.updateAllFieldsFrom(newPolicy);
-                    if (isUpdated) {
-                        toUpdate.add(existingPolicy);
-                    }
+                    // 영속 상태 엔티티 필드 변경 → dirty checking 대상
+                    existingPolicy.updateAllFieldsFrom(newPolicy);
                 }
 
                 // 처리된 데이터는 기존 데이터 목록에서 제거
@@ -188,23 +186,20 @@ public class PolicyService {
             // 기존 데이터 중 Open API에서 삭제된 정책을 삭제 리스트에 추가
             List<Policy> toDelete = new ArrayList<>(existingPolicyMap.values());
 
-            // Insert + Update + Hard Delete
-            synchronizeYouthPolicies(toSave, toUpdate, toDelete);
+            // Insert + Delete 처리
+            synchronizeYouthPolicies(toSave, toDelete);
         } catch (Exception e) {
             log.error("Error while processing youth policies: {}", e.getMessage(), e);
             throw new CommonException(ErrorCode.YOUTH_POLICY_PROCESSING_ERROR);
         }
     }
 
-    // 새로운 정책 데이터를 저장(Insert), 기존 데이터를 수정(Update), 삭제된 데이터를 제거(Delete)
+    // 새로운 정책 데이터를 저장(Insert), 삭제된 데이터를 제거(Delete)
     @Transactional
-    private void synchronizeYouthPolicies(List<Policy> toSave, List<Policy> toUpdate, List<Policy> toDelete) {
+    private void synchronizeYouthPolicies(List<Policy> toSave, List<Policy> toDelete) {
         try {
             if (!toSave.isEmpty()) {
                 policyRepository.saveAll(toSave);
-            }
-            if (!toUpdate.isEmpty()) {
-                policyRepository.saveAll(toUpdate);
             }
             if (!toDelete.isEmpty()) {
                 policyRepository.deleteAll(toDelete);
