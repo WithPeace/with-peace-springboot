@@ -276,10 +276,8 @@ public class PolicyService {
         // 사용자가 해당 정책을 찜했는지 여부 확인
         boolean isFavorite = favoritePolicyRepository.existsByUserIdAndPolicyId(userId, policyId);
         
-        // 정책 조회수 증가 - 조회수가 존재하면 UPDATE, 존재하지 않으면 INSERT
-        if (viewPolicyRepository.updateViewCount(policyId) == 0) {
-            viewPolicyRepository.insertViewCount(policyId);
-        }
+        // 정책 조회수 증가 - 조회 기록이 없으면 INSERT, 있으면 UPDATE
+        viewPolicyRepository.upsertViewCount(policyId);
 
         // 사용자 조회 기록 저장 - 조회 기록이 없으면 INSERT, 있으면 UPDATE
         userInteractionRepository.upsertUserInteraction(userId, policyId, EActionType.VIEW.name());
@@ -397,6 +395,7 @@ public class PolicyService {
         for(UserInteraction interaction : interactions) {
             String policyId = interaction.getPolicy().getId();
             EActionType actionType = interaction.getActionType();
+            int count = interaction.getCount();
             LocalDateTime actionTime = interaction.getActionTime();
 
             // 해당 정책의 현재 가중치 가져오기
@@ -405,7 +404,7 @@ public class PolicyService {
 
             // 상호작용 타입별 가중치 추가
             switch (actionType) {
-                case VIEW -> weight += 1; // 조회 -> +1점
+                case VIEW -> weight += count; // 조회 -> +(count*1)점
                 case FAVORITE -> weight +=3; // 찜하기 -> +3점
             }
 

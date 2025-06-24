@@ -43,6 +43,9 @@ public class UserInteraction {
     @Column(name = "action_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private EActionType actionType;
+    
+    @Column(name = "count", nullable = false)
+    private int count = 1;
 
     @Column(name = "action_time", nullable = false)
     private LocalDateTime actionTime;
@@ -51,6 +54,7 @@ public class UserInteraction {
     public UserInteraction(User user, Policy policy, EActionType actionType) {
         this.user = user;
         this.policy = policy;
+        this.count = 1; // 최초 1로 초기화
         this.actionType = actionType;
         this.actionTime = LocalDateTime.now();
     }

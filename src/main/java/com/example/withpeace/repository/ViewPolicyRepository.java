@@ -9,16 +9,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ViewPolicyRepository extends JpaRepository<ViewPolicy, Long> {
 
-    // 조회수가 존재하면 증가시키는 UPDATE 쿼리 (반환값: 업데이트된 행 개수)
+    // 정책의 조회 기록이 없으면 INSERT, 있으면 UPDATE
     @Modifying
-    @Query(value = "UPDATE view_policies SET view_count = view_count + 1 " +
-            "WHERE policy_id = :policyId", nativeQuery = true)
-    int updateViewCount(String policyId);
-
-    // 조회수가 없을 경우 새로운 조회수 INSERT
-    @Modifying
-    @Query(value = "INSERT INTO view_policies (policy_id, view_count) " +
-            "VALUES (:policyId, 1)", nativeQuery = true)
-    void insertViewCount(String policyId);
+    @Query(value = """
+        INSERT INTO view_policies (policy_id, view_count)
+        VALUES (:policyId, 1)
+        ON DUPLICATE KEY UPDATE view_count = view_count + 1
+    """, nativeQuery = true)
+    void upsertViewCount(String policyId);
 
 }
