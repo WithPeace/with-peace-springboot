@@ -371,11 +371,26 @@ public class PolicyService {
                 .map(Map.Entry::getKey)
                 .toList();
 
-        List<Policy> filteredRecommendedPolicies = policyRepository.findFilteredPoliciesByIdIn(
-                recommendedPolicyIds,
-                regionList, regionList.size(),
-                classificationList, classificationList.size()
-        ).stream().limit(MAX_RECOMMENDATION_COUNT).toList();
+        List<Policy> filteredRecommendedPolicies;
+        boolean hasRegionFilter = !regionList.isEmpty();
+        boolean hasClassificationFilter = !classificationList.isEmpty();
+
+        if(!hasRegionFilter && !hasClassificationFilter) {
+            // 필터 조건이 없는 경우: 단순 ID 조회 (nativeQuery 아님)
+            filteredRecommendedPolicies = policyRepository.findByIdIn(recommendedPolicyIds)
+                    .stream()
+                    .limit(MAX_RECOMMENDATION_COUNT)
+                    .toList();
+        } else {
+            // 필터 조건이 존재하는 경우: nativeQuery 기반 필터링 쿼리 사용
+            filteredRecommendedPolicies = policyRepository.findFilteredPoliciesByIdIn(
+                    recommendedPolicyIds,
+                    regionList, regionList.size(),
+                    classificationList, classificationList.size()
+            ).stream()
+            .limit(MAX_RECOMMENDATION_COUNT)
+            .toList();
+        }
 
         // 사용자가 찜한 정책 ID 목록 조회
         Set<String> favoritePolicyIds = getFavoritePolicyIdsFromEntities(user.getId(), filteredRecommendedPolicies);
