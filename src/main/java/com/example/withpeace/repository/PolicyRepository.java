@@ -36,6 +36,9 @@ public interface PolicyRepository extends JpaRepository<Policy, String>, JpaSpec
     @EntityGraph(attributePaths = {"region"})
     Optional<Policy> findById(String policyId);
 
+    // 추천된 정책 ID 목록을 기반으로 필터 없이 모든 정책을 조회
+    List<Policy> findByIdIn(List<String> policyIds);
+
     // 추천된 정책 ID 목록 중, 지역/분야 조건에 맞는 정책만 필터링하여 조회
     @Query(value = """
         SELECT p.* FROM policies p
