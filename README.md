@@ -31,7 +31,7 @@
 ## 🏗 프로젝트 아키텍처
 
 ### 시스템 아키텍처
-<img src="https://github.com/user-attachments/assets/96eb5af0-12fd-43dd-a4ea-01bb03c4b484" width="800"/>
+<img width="800" alt="아키텍처" src="https://github.com/user-attachments/assets/796d5d5d-26d2-4a59-bde9-34e53fc2d9ac" />
 
 
 ### 디렉터리 구조
@@ -48,14 +48,16 @@ com.example.withpeace           // 프로젝트의 루트 패키지
 └── resources                         // 설정 파일 및 기타 리소스
     ├── application.yml               // 기본 환경 설정
     ├── application-local.yml         // 로컬 환경 설정
-    ├── application-prod.yml           // 운영 환경 설정
-    └── application-staging.yml  // 스테이징 환경 설정
+    ├── application-prod.yml          // 운영 환경 설정
+    └── application-staging.yml       // 스테이징 환경 설정
 
 // 기타 주요 파일 및 디렉토리
 ├── build.gradle              // Gradle 빌드 설정 파일
 ├── Dockerfile                // Docker 이미지 빌드 설정
 └── .github/workflows         // CI/CD 설정 파일이 포함된 디렉터리
-    └── cicd.yml              // GitHub Actions 워크플로우
+    ├── build.yml             // build 워크플로우
+    ├── deploy-prod.yml       // 운영 환경 deploy 워크플로우
+    └── deploy-staging.yml    // 스테이징 환경 deploy 워크플로우
 ```
 
 <br>
