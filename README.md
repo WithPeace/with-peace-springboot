@@ -9,7 +9,7 @@
 | 구분 | 링크 |
 |------|------|
 | 🖥 ERD | https://dbdiagram.io/d/청하ERD-6835e7ca6980ade2ebb20ee5 |
-| 📚 Swagger 문서 | https://staging.cheongha.xyz/swagger-ui/index.html#/ |
+| 📚 Swagger 문서 | https://cheongha.xyz/swagger-ui/index.html#/ |
 
 <br>
 
@@ -31,8 +31,7 @@
 ## 🏗 프로젝트 아키텍처
 
 ### 시스템 아키텍처
-<img width="800" alt="아키텍처" src="https://github.com/user-attachments/assets/796d5d5d-26d2-4a59-bde9-34e53fc2d9ac" />
-
+<img width="800" alt="아키텍처" src="https://github.com/user-attachments/assets/ffb13218-505f-4332-874a-2ec3f5410adf" />
 
 ### 디렉터리 구조
 ```
